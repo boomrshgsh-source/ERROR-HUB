@@ -2,6 +2,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/x2zu/
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
 local Window = Library:Window({
@@ -11,7 +12,7 @@ local Window = Library:Window({
     Theme = "Dark",
     Config = {
         Keybind = Enum.KeyCode.LeftControl,
-        Size = UDim2.new(0, 450, 0, 350) 
+        Size = UDim2.new(0, 450, 0, 350)
     },
     CloseUIButton = {
         Enabled = true,
@@ -19,26 +20,93 @@ local Window = Library:Window({
     }
 })
 
+local humanoid
+local function updateHumanoid()
+    local char = player.Character
+    if char then
+        humanoid = char:FindFirstChildOfClass("Humanoid")
+    end
+end
+updateHumanoid()
+
+local speedEnabled, jumpEnabled, noclipEnabled, followEnabled = false, false, false, false
+local speedValue, jumpValue, followDistance = 16, 50, 16
+local followMode, followTarget, followTween = "Tween", nil, nil
+
+local function reapplySettings()
+    task.wait(1.5)
+    if not player.Character then return end
+    humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+
+    if speedEnabled and humanoid then
+        humanoid.WalkSpeed = speedValue
+    end
+
+    if jumpEnabled and humanoid then
+        humanoid.UseJumpPower = true
+        humanoid.JumpPower = jumpValue
+    end
+
+    if noclipEnabled then
+        task.spawn(function()
+            while noclipEnabled and task.wait(0.05) do
+                if not player.Character then break end
+                for _, part in pairs(player.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    end
+
+    if followEnabled and followTarget then
+        task.spawn(function()
+            while followEnabled and task.wait(0.01) do
+                if not (player.Character and followTarget.Character) then break end
+                local myRoot = player.Character:FindFirstChild("HumanoidRootPart")
+                local targetRoot = followTarget.Character:FindFirstChild("HumanoidRootPart")
+                if not (myRoot and targetRoot) then break end
+
+                local targetY = targetRoot.Position.Y
+                local behindVector = -targetRoot.CFrame.LookVector * followDistance
+                local targetPos = targetRoot.Position + behindVector
+                local newPos = Vector3.new(targetPos.X, targetY, targetPos.Z)
+                local lookAt = Vector3.new(targetRoot.Position.X, targetY, targetRoot.Position.Z)
+                local newCFrame = CFrame.new(newPos, lookAt)
+
+                if followMode == "Teleport" then
+                    myRoot.CFrame = newCFrame
+                elseif followMode == "Tween" then
+                    if followTween and followTween.PlaybackState == Enum.PlaybackState.Playing then continue end
+                    local tweenInfo = TweenInfo.new(0.02, Enum.EasingStyle.Linear)
+                    followTween = TweenService:Create(myRoot, tweenInfo, {CFrame = newCFrame})
+                    followTween:Play()
+                end
+            end
+        end)
+    end
+end
+
+player.CharacterAdded:Connect(function(char)
+    humanoid = char:WaitForChild("Humanoid")
+
+    humanoid.Died:Connect(function()
+        Window:Notify({
+            Title = "💀 ตัวละครตาย",
+            Desc = "รีเซ็ตระบบทั้งหมด...",
+            Time = 3
+        })
+    end)
+
+    reapplySettings()
+end)
 
 local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     MainTab:Section({Title = ""})
 
-    local humanoid = nil
-    local function updateHumanoid()
-        local char = player.Character
-        if char then humanoid = char:FindFirstChildOfClass("Humanoid") end
-    end
-    updateHumanoid()
-
-    player.CharacterAdded:Connect(function(char)
-        humanoid = char:WaitForChild("Humanoid")
-    end)
-
-    local speedEnabled, jumpEnabled = false, false
-    local speedValue, jumpValue = 16, 50
-
     MainTab:Toggle({
-        Title = " วิ่งเร็ว",
+        Title = "🏃 วิ่งเร็ว",
         Value = false,
         Callback = function(v)
             speedEnabled = v
@@ -47,7 +115,7 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     })
 
     MainTab:Slider({
-        Title = "ปรับความเร็ว",
+        Title = "⚡ ปรับความเร็ว",
         Min = 16, Max = 200, Value = 50,
         Callback = function(val)
             speedValue = val
@@ -56,7 +124,7 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     })
 
     MainTab:Toggle({
-        Title = " กระโดดสูง",
+        Title = "🦘 กระโดดสูง",
         Value = false,
         Callback = function(v)
             jumpEnabled = v
@@ -68,23 +136,42 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     })
 
     MainTab:Slider({
-        Title = "ปรับความสูง",
+        Title = " ปรับความสูง",
         Min = 50, Max = 300, Value = 100,
         Callback = function(val)
             jumpValue = val
             if jumpEnabled and humanoid then humanoid.JumpPower = val end
         end
     })
-end
 
+    MainTab:Toggle({
+        Title = "ทะลุสิ่งของ",
+        Value = false,
+        Callback = function(v)
+            noclipEnabled = v
+            if v then
+                Window:Notify({Title = "✅ เปิดทะลุสิ่งของ", Desc = "ตอนนี้มึงทะลุได้ละ!", Time = 3})
+            else
+                Window:Notify({Title = "🛑 ปิดฟังชั่นทะลุ", Desc = "กลับสู่สภาพปกติละ", Time = 3})
+            end
+        end
+    })
+
+    RunService.Stepped:Connect(function()
+        if not noclipEnabled then return end
+        local char = player.Character
+        if not char then return end
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end)
+end
 
 local TPTab = Window:Tab({Title = "TP", Icon = "map-pin"})
 
 local selectedPlayerName, playerNames = "", {}
-local followMode, followEnabled = "Tween", false
-local followTarget, followTween = nil, nil
-local followDistance = 16
-
 local function UpdatePlayerList()
     playerNames = {}
     for _, p in pairs(Players:GetPlayers()) do
@@ -97,7 +184,6 @@ UpdatePlayerList()
 Players.PlayerAdded:Connect(UpdatePlayerList)
 Players.PlayerRemoving:Connect(UpdatePlayerList)
 
-
 TPTab:Textbox({
     Title = "พิมชื่อผู้เล่นที่จะวาร์ปหา",
     Placeholder = "(แค่ 3 ตัวแรกก็พอ)",
@@ -106,10 +192,9 @@ TPTab:Textbox({
     end
 })
 
-
 TPTab:Dropdown({
     Title = "🎯 รูปแบบการตาม",
-    List = {"Tween", "Teleport", ""},
+    List = {"Tween", "Teleport"},
     Value = followMode,
     Callback = function(val)
         followMode = val
@@ -121,7 +206,6 @@ TPTab:Dropdown({
     end
 })
 
-
 TPTab:Slider({
     Title = "ระยะ ",
     Min = 1, Max = 50, Value = followDistance,
@@ -129,7 +213,6 @@ TPTab:Slider({
         followDistance = val
     end
 })
-
 
 TPTab:Toggle({
     Title = "🔁 ตามคนที่มึงเลือก",
@@ -139,11 +222,7 @@ TPTab:Toggle({
         if v then
             local input = string.lower(selectedPlayerName)
             if #input < 3 then
-                Window:Notify({
-                    Title = "❌ Error",
-                    Desc = "กรุณาพิมพ์อย่างน้อย 3 ตัวอักษร",
-                    Time = 3
-                })
+                Window:Notify({Title = "❌ Error", Desc = "กรุณาพิมพ์อย่างน้อย 3 ตัวอักษร", Time = 3})
                 followEnabled = false
                 return
             end
@@ -158,66 +237,20 @@ TPTab:Toggle({
             end
 
             if not followTarget or not followTarget.Character or not followTarget.Character:FindFirstChild("HumanoidRootPart") then
-                Window:Notify({
-                    Title = "❌ Error",
-                    Desc = "ไม่พบผู้เล่นที่จะติดตาม",
-                    Time = 3
-                })
+                Window:Notify({Title = "❌ Error", Desc = "ไม่พบผู้เล่นที่จะตาม", Time = 3})
                 followEnabled = false
                 return
             end
 
-            Window:Notify({
-                Title = "✅ เริ่มติดตาม",
-                Desc = "กำลังติดตาม " .. followTarget.DisplayName .. " ด้วยโหมด " .. followMode,
-                Time = 4
-            })
-
-            task.spawn(function()
-                while followEnabled and task.wait(0.001) do
-                    if not (player.Character and followTarget.Character) then
-                        followEnabled = false
-                        break
-                    end
-
-                    local myRoot = player.Character:FindFirstChild("HumanoidRootPart")
-                    local targetRoot = followTarget.Character:FindFirstChild("HumanoidRootPart")
-                    if not (myRoot and targetRoot) then continue end
-
-                    local targetY = targetRoot.Position.Y
-                    local distance = math.max(1, followDistance)
-                    local behindVector = -targetRoot.CFrame.LookVector * distance
-                    local targetPos = targetRoot.Position + behindVector
-                    local newPos = Vector3.new(targetPos.X, targetY, targetPos.Z)
-                    local lookAt = Vector3.new(targetRoot.Position.X, targetY, targetRoot.Position.Z)
-                    local newCFrame = CFrame.new(newPos, lookAt)
-
-                    if followMode == "Teleport" then
-                        myRoot.CFrame = newCFrame
-                        myRoot.Velocity = Vector3.zero
-                    elseif followMode == "Tween" then
-                        if followTween and followTween.PlaybackState == Enum.PlaybackState.Playing then continue end
-                        local tweenInfo = TweenInfo.new(0.01, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
-                        followTween = TweenService:Create(myRoot, tweenInfo, {CFrame = newCFrame})
-                        followTween:Play()
-                    elseif followMode == "Fly" then
-                        myRoot.Anchored = false
-                        myRoot.CFrame = myRoot.CFrame:Lerp(newCFrame, 0.3)
-                    end
-                end
-            end)
+            Window:Notify({Title = "✅ เริ่มตาม", Desc = "กำลังตาม " .. followTarget.DisplayName .. " ด้วยโหมด " .. followMode, Time = 4})
+            reapplySettings()
         else
             followTarget = nil
             followTween = nil
-            Window:Notify({
-                Title = "🛑 หยุดติดตาม",
-                Desc = "หยุดติดตามผู้เล่นแล้ว",
-                Time = 3
-            })
+            Window:Notify({Title = "🛑 หยุดตาม", Desc = "หยุดตามผู้เล่นแล้ว", Time = 3})
         end
     end
 })
-
 
 TPTab:Button({
     Title = "🚀 เทเลพอร์ตไปหาคนที่มึงเลือก",
@@ -245,34 +278,23 @@ TPTab:Button({
 
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
-            Window:Notify({
-                Title = "✅ สำเร็จ",
-                Desc = "วาร์ปไปหา " .. target.DisplayName .. " แล้ว!",
-                Time = 3
-            })
+            Window:Notify({Title = "✅ สำเร็จ", Desc = "เทเลพอร์ตไปหา " .. target.DisplayName .. " แล้ว!", Time = 3})
         else
-            Window:Notify({
-                Title = "❌ Error",
-                Desc = "ไม่พบผู้เล่นที่ชื่อ '" .. selectedPlayerName .. "'",
-                Time = 3
-            })
+            Window:Notify({Title = "❌ Error", Desc = "ไม่พบผู้เล่นที่ชื่อ '" .. selectedPlayerName .. "'", Time = 3})
         end
     end
 })
-
 
 local PlayerListBox = TPTab:Code({
     Title = "รายชื่อคนในเซิฟตอนนี้👥",
     Code = table.concat(playerNames, "\n")
 })
-
 task.spawn(function()
     while task.wait(2) do
         UpdatePlayerList()
         PlayerListBox:SetCode(table.concat(playerNames, "\n"))
     end
 end)
-
 
 local CreditTab = Window:Tab({Title = "Credits", Icon = "heart"}) do
     CreditTab:Section({Title = "ผู้พัฒนา"})
@@ -281,17 +303,13 @@ local CreditTab = Window:Tab({Title = "Credits", Icon = "heart"}) do
         Desc = "คัดลอกลิงก์ Discord ของ ERROR HUB",
         Callback = function()
             setclipboard("https://discord.gg/eZwAXpwAt")
-            Window:Notify({
-                Title = "Copied!",
-                Desc = "ลิงก์ Discord ถูกคัดลอกแล้ว ✅",
-                Time = 3
-            })
+            Window:Notify({Title = "Copied!", Desc = "ลิงก์ Discord ถูกคัดลอกแล้ว ✅", Time = 3})
         end
     })
 end
 
 Window:Notify({
     Title = "ERROR HUB",
-    Desc = "✅ Loaded successfully!\nกด LeftControl เพื่อเปิด/ปิด UI\nมีระบบ วิ่งเร็ว กระโดดสูง TP และติดตามผู้เล่น",
+    Desc = "✅ Loaded successfully!",
     Time = 6
 })
