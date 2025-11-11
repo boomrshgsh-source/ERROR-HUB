@@ -1,4 +1,3 @@
-
 local SoundService = game:GetService("SoundService")
 local loadSound = Instance.new("Sound")
 loadSound.SoundId = "rbxassetid://98797174600699"
@@ -130,20 +129,13 @@ end)
 
 local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     MainTab:Section({Title = ""})
-
     MainTab:Toggle({
         Title = "🏃 วิ่งเร็ว",
         Value = false,
         Callback = function(v)
             toggleTpWalk(v)
-            if v then
-                Window:Notify({Title = "", Desc = "", Time = 3})
-            else
-                Window:Notify({Title = "", Desc = "", Time = 3})
-            end
         end
     })
-
     MainTab:Slider({
         Title = "⚡ ปรับความเร็ว",
         Min = 1, Max = 5, Value = tpWalkLevel,
@@ -152,7 +144,6 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
             updateTpWalkSpeed()
         end
     })
-
     MainTab:Toggle({
         Title = "🦘 กระโดดสูง",
         Value = false,
@@ -164,7 +155,6 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
             end
         end
     })
-
     MainTab:Slider({
         Title = "ปรับความสูง",
         Min = 50, Max = 300, Value = jumpValue,
@@ -175,20 +165,13 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
             end
         end
     })
-
     MainTab:Toggle({
         Title = "ทะลุสิ่งของ",
         Value = false,
         Callback = function(v)
             noclipEnabled = v
-            if v then
-                Window:Notify({Title = "✅ เปิดทะลุสิ่งของ", Desc = "ตอนนี้มึงทะลุได้ละ!", Time = 3})
-            else
-                Window:Notify({Title = "🛑 ปิดฟังก์ชันทะลุ", Desc = "กลับสู่สภาพปกติละ", Time = 3})
-            end
         end
     })
-
     RunService.Stepped:Connect(function()
         if not noclipEnabled then return end
         local char = player.Character
@@ -203,7 +186,6 @@ end
 
 local TPTab = Window:Tab({Title = "TP", Icon = "map-pin"})
 local selectedPlayerName, playerNames = "", {}
-
 local function UpdatePlayerList()
     playerNames = {}
     for _, p in pairs(Players:GetPlayers()) do
@@ -223,17 +205,14 @@ TPTab:Textbox({
         selectedPlayerName = text
     end
 })
-
 TPTab:Dropdown({
     Title = "🎯 รูปแบบการตาม",
     List = {"Tween", "Teleport"},
     Value = followMode,
     Callback = function(val)
         followMode = val
-        Window:Notify({Title = "🔧 Mode Set", Desc = "ติดตาม: " .. val, Time = 2})
     end
 })
-
 TPTab:Slider({
     Title = "ระยะ",
     Min = 1, Max = 50, Value = followDistance,
@@ -241,7 +220,6 @@ TPTab:Slider({
         followDistance = val
     end
 })
-
 TPTab:Toggle({
     Title = "🔁 ตามคนที่เลือก",
     Value = false,
@@ -250,11 +228,9 @@ TPTab:Toggle({
         if v then
             local input = string.lower(selectedPlayerName)
             if #input < 3 then
-                Window:Notify({Title = "❌ Error", Desc = "กรุณาพิมพ์อย่างน้อย 3 ตัวอักษร", Time = 3})
                 followEnabled = false
                 return
             end
-
             followTarget = nil
             for _, p in pairs(Players:GetPlayers()) do
                 local name, displayName = string.lower(p.Name), string.lower(p.DisplayName)
@@ -263,51 +239,33 @@ TPTab:Toggle({
                     break
                 end
             end
-
-            if not followTarget or not followTarget.Character then
-                Window:Notify({Title = "❌ Error", Desc = "ไม่พบผู้เล่นที่จะตาม", Time = 3})
+            if not followTarget then
                 followEnabled = false
                 return
             end
-
-            Window:Notify({Title = "✅ เริ่มตาม", Desc = "กำลังตาม " .. followTarget.DisplayName, Time = 4})
             reapplySettings()
         else
             followTarget = nil
-            followLoop = nil
-            Window:Notify({Title = "🛑 หยุดตาม", Desc = "หยุดตามผู้เล่นแล้ว", Time = 3})
         end
     end
 })
-
 TPTab:Button({
     Title = "🚀 เทเลพอร์ตไปหาคนที่เลือก",
     Desc = "ใส่ชื่อเสร็จก็กดเลย",
     Callback = function()
         local input = string.lower(selectedPlayerName)
-        if #input < 3 then
-            Window:Notify({Title = "❌ Error", Desc = "พิมพ์อย่างน้อย 3 ตัวอักษร", Time = 3})
-            return
-        end
-
         local target
         for _, p in pairs(Players:GetPlayers()) do
-            local name, displayName = string.lower(p.Name), string.lower(p.DisplayName)
-            if name:sub(1, #input) == input or displayName:sub(1, #input) == input then
+            if string.lower(p.Name):sub(1, #input) == input or string.lower(p.DisplayName):sub(1, #input) == input then
                 target = p
                 break
             end
         end
-
         if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
             player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
-            Window:Notify({Title="✅ สำเร็จ", Desc="เทเลพอร์ตไปหา "..target.DisplayName.." แล้ว!", Time=3})
-        else
-            Window:Notify({Title="❌ Error", Desc="ไม่พบผู้เล่นที่ชื่อ '"..selectedPlayerName.."'", Time=3})
         end
     end
 })
-
 local PlayerListBox = TPTab:Code({
     Title = "รายชื่อคนในเซิฟตอนนี้👥",
     Code = table.concat(playerNames, "\n")
@@ -318,6 +276,82 @@ task.spawn(function()
         PlayerListBox:SetCode(table.concat(playerNames, "\n"))
     end
 end)
+
+local PlayerTab = Window:Tab({Title = "Player", Icon = "user"}) do
+    PlayerTab:Section({Title = ""})
+
+    local ESPEnabled = false
+
+    PlayerTab:Toggle({
+        Title = "ESP",
+        Value = false,
+        Callback = function(v)
+            _G.ESP = v
+            ESPEnabled = v
+            local Plr = game.Players.LocalPlayer
+
+            if v then
+                Window:Notify({Title = "✅ ESP เปิดใช้งาน", Desc = "", Time = 3})
+                pcall(function()
+                    game.Lighting.Technology = Enum.Technology.Future
+                end)
+
+                task.spawn(function()
+                    while _G.ESP do
+                        task.wait(1)
+                        pcall(function()
+                            for _, v in pairs(game.Players:GetPlayers()) do
+                                if v ~= Plr and v.Character then
+                                    local existingHighlight = v.Character:FindFirstChild("ESP")
+                                    local head = v.Character:FindFirstChild("Head")
+
+                                    if not existingHighlight and _G.ESP then
+                                        local hl = Instance.new("Highlight")
+                                        hl.Name = "ESP"
+                                        hl.FillColor = Color3.fromRGB(170, 0, 255)
+                                        hl.OutlineColor = Color3.fromRGB(255, 0, 255)
+                                        hl.FillTransparency = 0.5
+                                        hl.OutlineTransparency = 0
+                                        hl.Parent = v.Character
+                                    end
+
+                                    if head and not head:FindFirstChild("NameTag") and _G.ESP then
+                                        local billboard = Instance.new("BillboardGui", head)
+                                        billboard.Name = "NameTag"
+                                        billboard.Size = UDim2.new(0, 200, 0, 50)
+                                        billboard.AlwaysOnTop = true
+                                        billboard.StudsOffset = Vector3.new(0, 3, 0)
+
+                                        local nameLabel = Instance.new("TextLabel", billboard)
+                                        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+                                        nameLabel.BackgroundTransparency = 1
+                                        nameLabel.Text = v.Name
+                                        nameLabel.TextColor3 = Color3.fromRGB(255, 0, 255)
+                                        nameLabel.TextStrokeTransparency = 0
+                                        nameLabel.TextScaled = true
+                                        nameLabel.Font = Enum.Font.GothamBold
+                                    end
+                                end
+                            end
+                        end)
+                    end
+                end)
+            else
+                for _, v in pairs(game.Players:GetPlayers()) do
+                    if v.Character then
+                        local hl = v.Character:FindFirstChild("ESP")
+                        if hl then hl:Destroy() end
+                        local head = v.Character:FindFirstChild("Head")
+                        if head and head:FindFirstChild("NameTag") then
+                            head.NameTag:Destroy()
+                        end
+                    end
+                end
+                Window:Notify({Title = "🛑 ปิด ESP", Desc = "", Time = 3})
+            end
+        end
+    })
+end
 
 local CreditTab = Window:Tab({Title = "Credits", Icon = "heart"}) do
     CreditTab:Section({Title = "ผู้พัฒนา"})
