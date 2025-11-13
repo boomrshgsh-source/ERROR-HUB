@@ -1,3 +1,4 @@
+--// เสียงโหลด
 local SoundService = game:GetService("SoundService")
 local loadSound = Instance.new("Sound")
 loadSound.SoundId = "rbxassetid://98797174600699"
@@ -6,27 +7,28 @@ loadSound.Parent = SoundService
 loadSound:Play()
 game.Debris:AddItem(loadSound, 3)
 
+--// UI Framework
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/x2zu/OPEN-SOURCE-UI-ROBLOX/refs/heads/main/X2ZU%20UI%20ROBLOX%20OPEN%20SOURCE/DummyUi-leak-by-x2zu/fetching-main/Tools/Framework.luau"))()
 
+--// Services
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
+--// หน้าต่างหลัก
 local Window = Library:Window({
     Title = "ERROR HUB",
     Desc = "Beta!!!!",
     Icon = 87372447687978,
     Theme = "Dark",
-    Config = {
-        Keybind = Enum.KeyCode.LeftControl,
-        Size = UDim2.new(0, 450, 0, 350)
-    },
-    CloseUIButton = {
-        Enabled = true,
-        Text = "ERROR"
-    }
+    Config = { Keybind = Enum.KeyCode.LeftControl, Size = UDim2.new(0, 450, 0, 350) },
+    CloseUIButton = { Enabled = true, Text = "ERROR" }
 })
+
+----------------------------------------------------
+--== ฟังก์ชันระบบหลัก ==--
+----------------------------------------------------
 
 local humanoid
 local jumpEnabled, jumpValue = false, 100
@@ -73,9 +75,7 @@ local function reapplySettings()
         humanoid.JumpPower = jumpValue
     end
 
-    if tpWalkEnabled then
-        toggleTpWalk(true)
-    end
+    if tpWalkEnabled then toggleTpWalk(true) end
 
     if noclipEnabled then
         task.spawn(function()
@@ -118,31 +118,24 @@ end
 player.CharacterAdded:Connect(function(char)
     humanoid = char:WaitForChild("Humanoid")
     humanoid.Died:Connect(function()
-        Window:Notify({
-            Title = "",
-            Desc = "",
-            Time = 3
-        })
+        Window:Notify({Title = "💀", Desc = "คุณตายแล้ว!", Time = 3})
     end)
     reapplySettings()
 end)
 
+----------------------------------------------------
+--== TAB: Main ==--
+----------------------------------------------------
 local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
-    MainTab:Section({Title = ""})
     MainTab:Toggle({
         Title = "🏃 วิ่งเร็ว",
         Value = false,
-        Callback = function(v)
-            toggleTpWalk(v)
-        end
+        Callback = function(v) toggleTpWalk(v) end
     })
     MainTab:Slider({
         Title = "⚡ ปรับความเร็ว",
         Min = 1, Max = 5, Value = tpWalkLevel,
-        Callback = function(val)
-            tpWalkLevel = val
-            updateTpWalkSpeed()
-        end
+        Callback = function(val) tpWalkLevel = val updateTpWalkSpeed() end
     })
     MainTab:Toggle({
         Title = "🦘 กระโดดสูง",
@@ -168,9 +161,7 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     MainTab:Toggle({
         Title = "ทะลุสิ่งของ",
         Value = false,
-        Callback = function(v)
-            noclipEnabled = v
-        end
+        Callback = function(v) noclipEnabled = v end
     })
     RunService.Stepped:Connect(function()
         if not noclipEnabled then return end
@@ -184,14 +175,16 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     end)
 end
 
+----------------------------------------------------
+--== TAB: TP ==--
+----------------------------------------------------
 local TPTab = Window:Tab({Title = "TP", Icon = "map-pin"})
 local selectedPlayerName, playerNames = "", {}
+
 local function UpdatePlayerList()
     playerNames = {}
     for _, p in pairs(Players:GetPlayers()) do
-        if p ~= player then
-            table.insert(playerNames, p.DisplayName .. " (" .. p.Name .. ")")
-        end
+        if p ~= player then table.insert(playerNames, p.DisplayName .. " (" .. p.Name .. ")") end
     end
 end
 UpdatePlayerList()
@@ -201,24 +194,18 @@ Players.PlayerRemoving:Connect(UpdatePlayerList)
 TPTab:Textbox({
     Title = "พิมชื่อผู้เล่นที่จะเทเลพอร์ตหา",
     Placeholder = "(แค่ 3 ตัวแรกก็พอ)",
-    Callback = function(text)
-        selectedPlayerName = text
-    end
+    Callback = function(text) selectedPlayerName = text end
 })
 TPTab:Dropdown({
     Title = "🎯 รูปแบบการตาม",
     List = {"Tween", "Teleport"},
-    Value = followMode,
-    Callback = function(val)
-        followMode = val
-    end
+    Value = "Tween",
+    Callback = function(val) followMode = val end
 })
 TPTab:Slider({
     Title = "ระยะ",
     Min = 1, Max = 50, Value = followDistance,
-    Callback = function(val)
-        followDistance = val
-    end
+    Callback = function(val) followDistance = val end
 })
 TPTab:Toggle({
     Title = "🔁 ตามคนที่เลือก",
@@ -227,21 +214,11 @@ TPTab:Toggle({
         followEnabled = v
         if v then
             local input = string.lower(selectedPlayerName)
-            if #input < 3 then
-                followEnabled = false
-                return
-            end
-            followTarget = nil
+            if #input < 3 then followEnabled = false return end
             for _, p in pairs(Players:GetPlayers()) do
-                local name, displayName = string.lower(p.Name), string.lower(p.DisplayName)
-                if name:sub(1, #input) == input or displayName:sub(1, #input) == input then
-                    followTarget = p
-                    break
+                if string.lower(p.Name):sub(1, #input) == input or string.lower(p.DisplayName):sub(1, #input) == input then
+                    followTarget = p break
                 end
-            end
-            if not followTarget then
-                followEnabled = false
-                return
             end
             reapplySettings()
         else
@@ -254,15 +231,12 @@ TPTab:Button({
     Desc = "ใส่ชื่อเสร็จก็กดเลย",
     Callback = function()
         local input = string.lower(selectedPlayerName)
-        local target
         for _, p in pairs(Players:GetPlayers()) do
             if string.lower(p.Name):sub(1, #input) == input or string.lower(p.DisplayName):sub(1, #input) == input then
-                target = p
-                break
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    player.Character.HumanoidRootPart.CFrame = p.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
+                end
             end
-        end
-        if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = target.Character.HumanoidRootPart.CFrame + Vector3.new(0,3,0)
         end
     end
 })
@@ -277,96 +251,347 @@ task.spawn(function()
     end
 end)
 
+----------------------------------------------------
+--== TAB: Player (ESP 2D ด้านบนจอ) ==--
+----------------------------------------------------
 local PlayerTab = Window:Tab({Title = "Player", Icon = "user"}) do
-    PlayerTab:Section({Title = ""})
+    PlayerTab:Section({Title = "ESP"})
 
-    local ESPEnabled = false
+    local Camera = workspace.CurrentCamera
+    local esp, espEnabled, RunServiceConnection = {}, false, nil
+
+    repeat task.wait() until Camera and Camera.ViewportSize.X > 0
+
+    local function createDrawsFor(plr)
+        if esp[plr] then return end
+        local line = Drawing.new("Line")
+        line.Color = Color3.fromRGB(170, 0, 255)
+        line.Thickness = 1.6
+        line.Transparency = 1
+        line.Visible = false
+
+        local boxLines = {}
+        for i = 1, 4 do
+            local l = Drawing.new("Line")
+            l.Color = Color3.fromRGB(170, 0, 255)
+            l.Thickness = 1.4
+            l.Transparency = 1
+            l.Visible = false
+            table.insert(boxLines, l)
+        end
+
+        local txt = Drawing.new("Text")
+        txt.Color = Color3.fromRGB(255, 255, 255)
+        txt.Size = 14
+        txt.Center = true
+        txt.Outline = true
+        txt.Font = 2
+        txt.Visible = false
+
+        esp[plr] = { Line = line, BoxLines = boxLines, Text = txt }
+    end
+
+    local function removeDrawsFor(plr)
+        local o = esp[plr]
+        if not o then return end
+        if o.Line then o.Line:Remove() end
+        for _, l in pairs(o.BoxLines or {}) do l:Remove() end
+        if o.Text then o.Text:Remove() end
+        esp[plr] = nil
+    end
+
+    local function clearAllDraws()
+        for plr in pairs(esp) do removeDrawsFor(plr) end
+    end
+
+    local function updateESP()
+        if not espEnabled then return end
+        local viewport = Camera.ViewportSize
+        local topCenter = Vector2.new(viewport.X * 0.5, 0) -- 🔥 จุดกึ่งกลางด้านบนของจอ
+
+        for plr, d in pairs(esp) do
+            local char = plr.Character
+            if not char then
+                d.Line.Visible = false
+                for _, l in pairs(d.BoxLines) do l.Visible = false end
+                d.Text.Visible = false
+            else
+                local head = char:FindFirstChild("Head")
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if not head or not hrp then continue end
+
+                local rootScreen, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                local headScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.4, 0))
+                local footScreen = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
+
+                if onScreen then
+                    local height = math.abs(headScreen.Y - footScreen.Y)
+                    local width = height / 2
+                    local topLeft = Vector2.new(rootScreen.X - width / 2, rootScreen.Y - height / 2)
+                    local topRight = Vector2.new(rootScreen.X + width / 2, rootScreen.Y - height / 2)
+                    local bottomLeft = Vector2.new(rootScreen.X - width / 2, rootScreen.Y + height / 2)
+                    local bottomRight = Vector2.new(rootScreen.X + width / 2, rootScreen.Y + height / 2)
+
+                    d.BoxLines[1].From, d.BoxLines[1].To = topLeft, topRight
+                    d.BoxLines[2].From, d.BoxLines[2].To = topRight, bottomRight
+                    d.BoxLines[3].From, d.BoxLines[3].To = bottomRight, bottomLeft
+                    d.BoxLines[4].From, d.BoxLines[4].To = bottomLeft, topLeft
+                    for _, l in pairs(d.BoxLines) do l.Visible = true end
+
+                    d.Line.From = topCenter -- ✅ จุดบนจอด้านบน
+                    d.Line.To = Vector2.new(rootScreen.X, rootScreen.Y)
+                    d.Line.Visible = true
+
+                    local distance = (Camera.CFrame.Position - hrp.Position).Magnitude
+                    d.Text.Position = Vector2.new(rootScreen.X, topLeft.Y - 20)
+                    d.Text.Text = string.format("%s [%.1f]", plr.DisplayName, distance)
+                    d.Text.Visible = true
+                else
+                    d.Line.Visible = false
+                    for _, l in pairs(d.BoxLines) do l.Visible = false end
+                    d.Text.Visible = false
+                end
+            end
+        end
+    end
+
+    local function startESP()
+        if espEnabled then return end
+        espEnabled = true
+        for _, p in ipairs(Players:GetPlayers()) do if p ~= player then createDrawsFor(p) end end
+        RunServiceConnection = RunService.RenderStepped:Connect(updateESP)
+        Players.PlayerAdded:Connect(function(p) if espEnabled and p ~= player then createDrawsFor(p) end end)
+        Players.PlayerRemoving:Connect(function(p) removeDrawsFor(p) end)
+    end
+
+    local function stopESP()
+        if not espEnabled then return end
+        espEnabled = false
+        if RunServiceConnection then RunServiceConnection:Disconnect() RunServiceConnection = nil end
+        clearAllDraws()
+    end
 
     PlayerTab:Toggle({
-        Title = "ESP",
+        Title = "มองคนในเซิฟ",
         Value = false,
         Callback = function(v)
-            _G.ESP = v
-            ESPEnabled = v
-            local Plr = game.Players.LocalPlayer
-
             if v then
-                Window:Notify({Title = "✅ ESP เปิดใช้งาน", Desc = "", Time = 3})
-                pcall(function()
-                    game.Lighting.Technology = Enum.Technology.Future
-                end)
-
-                task.spawn(function()
-                    while _G.ESP do
-                        task.wait(1)
-                        pcall(function()
-                            for _, v in pairs(game.Players:GetPlayers()) do
-                                if v ~= Plr and v.Character then
-                                    local existingHighlight = v.Character:FindFirstChild("ESP")
-                                    local head = v.Character:FindFirstChild("Head")
-
-                                    if not existingHighlight and _G.ESP then
-                                        local hl = Instance.new("Highlight")
-                                        hl.Name = "ESP"
-                                        hl.FillColor = Color3.fromRGB(170, 0, 255)
-                                        hl.OutlineColor = Color3.fromRGB(255, 0, 255)
-                                        hl.FillTransparency = 0.5
-                                        hl.OutlineTransparency = 0
-                                        hl.Parent = v.Character
-                                    end
-
-                                    if head and not head:FindFirstChild("NameTag") and _G.ESP then
-                                        local billboard = Instance.new("BillboardGui", head)
-                                        billboard.Name = "NameTag"
-                                        billboard.Size = UDim2.new(0, 200, 0, 50)
-                                        billboard.AlwaysOnTop = true
-                                        billboard.StudsOffset = Vector3.new(0, 3, 0)
-
-                                        local nameLabel = Instance.new("TextLabel", billboard)
-                                        nameLabel.Size = UDim2.new(1, 0, 1, 0)
-                                        nameLabel.BackgroundTransparency = 1
-                                        nameLabel.Text = v.Name
-                                        nameLabel.TextColor3 = Color3.fromRGB(255, 0, 255)
-                                        nameLabel.TextStrokeTransparency = 0
-                                        nameLabel.TextScaled = true
-                                        nameLabel.Font = Enum.Font.GothamBold
-                                    end
-                                end
-                            end
-                        end)
-                    end
-                end)
+                startESP()
+                Window:Notify({Title = "✅ ESP เปิดใช้งาน", Time = 3})
             else
-                for _, v in pairs(game.Players:GetPlayers()) do
-                    if v.Character then
-                        local hl = v.Character:FindFirstChild("ESP")
-                        if hl then hl:Destroy() end
-                        local head = v.Character:FindFirstChild("Head")
-                        if head and head:FindFirstChild("NameTag") then
-                            head.NameTag:Destroy()
-                        end
-                    end
-                end
-                Window:Notify({Title = "🛑 ปิด ESP", Desc = "", Time = 3})
+                stopESP()
+                Window:Notify({Title = "🛑 ปิด ESP", Time = 3})
             end
         end
     })
 end
+   --// LocalScript (ใส่ใน StarterPlayerScripts)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
-local CreditTab = Window:Tab({Title = "Credits", Icon = "heart"}) do
-    CreditTab:Section({Title = "ผู้พัฒนา"})
-    CreditTab:Button({
-        Title = "📋 Copy Discord Link",
-        Desc = "คัดลอกลิงก์ Discord ของ ERROR HUB",
-        Callback = function()
-            setclipboard("https://discord.gg/eZwAXpwAt")
-            Window:Notify({Title = "Copied!", Desc = "ลิงก์ Discord ถูกคัดลอกแล้ว ✅", Time = 3})
-        end
-    })
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+--// UI setup
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TargetCircleUI"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+--// วงกลม UI ตรงกลางจอ
+local circleSize = 250 -- ขนาดวงกลม (px)
+local circle = Instance.new("Frame")
+circle.Name = "CenterCircle"
+circle.Size = UDim2.fromOffset(circleSize, circleSize)
+circle.AnchorPoint = Vector2.new(0.5, 0.5)
+circle.Position = UDim2.fromScale(0.5, 0.5)
+circle.BackgroundTransparency = 1
+circle.Visible = false -- เริ่มซ่อนวงกลม
+circle.Parent = screenGui
+
+local circleStroke = Instance.new("UIStroke")
+circleStroke.Thickness = 3
+circleStroke.Color = Color3.fromRGB(170, 0, 255) -- ม่วงนีออน
+circleStroke.Parent = circle
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1, 0)
+corner.Parent = circle
+
+local aspect = Instance.new("UIAspectRatioConstraint")
+aspect.AspectRatio = 1
+aspect.DominantAxis = Enum.DominantAxis.Height
+aspect.Parent = circle
+
+--// ตัวแปรหลัก
+local radius = circleSize / 2
+local currentTween = nil
+local tweenDuration = 0.10 -- ความนุ่มนวลของการเล็ง
+local updateInterval = 0.01
+local accumulatedTime = 0
+local lockEnabled = false -- เริ่มปิดล็อกเป้า
+
+--// ฟังก์ชันล็อกหัว
+local function LockToHead(targetHead)
+	if not targetHead then return end
+	local camPos = Camera.CFrame.Position
+	local targetPos = targetHead.Position
+
+	local goalCFrame = CFrame.new(camPos, targetPos)
+
+	if currentTween then
+		currentTween:Cancel()
+	end
+
+	local tweenInfo = TweenInfo.new(tweenDuration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	currentTween = TweenService:Create(Camera, tweenInfo, {CFrame = goalCFrame})
+	currentTween:Play()
 end
 
-Window:Notify({
-    Title = "ERROR HUB",
-    Desc = "✅ Loaded successfully!",
-    Time = 6
+--// ฟังก์ชันหาผู้เล่นในวงที่ใกล้ที่สุด
+local function GetClosestTarget()
+	local screenCenter = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+	local closestPlayer = nil
+	local shortestDistance = radius
+
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+			local head = player.Character.Head
+			local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+			if onScreen then
+				local head2D = Vector2.new(headPos.X, headPos.Y)
+				local distance = (head2D - screenCenter).Magnitude
+				if distance <= radius and distance < shortestDistance then
+					shortestDistance = distance
+					closestPlayer = player
+				end
+			end
+		end
+	end
+
+	return closestPlayer
+end
+
+--// ฟังก์ชันปรับขนาดวงกลม
+local function SetCircleSize(sizePx)
+	radius = sizePx / 2
+	circle.Size = UDim2.fromOffset(sizePx, sizePx)
+end
+
+--// ฟังก์ชันเปิด/ปิด AimLock
+local function ToggleAimLock(state)
+	lockEnabled = state
+	circle.Visible = state
+	if not state and currentTween then
+		currentTween:Cancel()
+		currentTween = nil
+	end
+end
+
+--// อัปเดตล็อกเป้าทุกเฟรม (จำกัดอัปเดตจริงตาม updateInterval)
+RunService.RenderStepped:Connect(function(deltaTime)
+	if not lockEnabled then return end
+
+	accumulatedTime += deltaTime
+	if accumulatedTime >= updateInterval then
+		accumulatedTime = 0
+		local target = GetClosestTarget()
+		if target and target.Character and target.Character:FindFirstChild("Head") then
+			LockToHead(target.Character.Head)
+		end
+	end
+end)
+
+--// UI Framework: PlayerTab toggle และ slider (สมมติ PlayerTab มีอยู่แล้ว)
+PlayerTab:Toggle({
+	Title = "ล็อกหัว(มันกากอยู่)",
+	Value = false,
+	Callback = function(value)
+		ToggleAimLock(value)
+	end
 })
+
+PlayerTab:Slider({
+	Title = "ขนาดระยะล็อก",
+	Min = 50,
+	Max = 400,
+	Value = radius * 2,
+	Callback = function(val)
+		SetCircleSize(val)
+	end
+})
+   local RunService = game:GetService("RunService")
+getgenv().Fling = false  -- เปิด/ปิดตรงนี้ true/false
+
+local function ToggleFling(state)
+    getgenv().Fling = state
+end
+
+task.spawn(function()
+    while true do
+        RunService.Heartbeat:Wait()
+        if getgenv().Fling then
+            local player = game.Players.LocalPlayer
+            local character = player and player.Character
+            local root = character and character:FindFirstChild("HumanoidRootPart")
+            local humanoid = character and character:FindFirstChildWhichIsA("Humanoid")
+            if not (character and root and humanoid) then
+                continue
+            end
+
+            humanoid.Died:Once(function()
+                getgenv().Fling = false
+            end)
+
+            for _, v in pairs(character:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.CanCollide = false
+                end
+            end
+
+            local vel = root.Velocity
+            local movel = 0.1
+            root.Velocity = vel * 10000 + Vector3.new(0, 10000, 0)
+            RunService.RenderStepped:Wait()
+            root.Velocity = vel
+            RunService.Stepped:Wait()
+            root.Velocity = vel + Vector3.new(0, movel, 0)
+            movel = -movel
+        end
+    end
+end)
+
+-- เชื่อมกับ PlayerTab UI toggle
+PlayerTab:Toggle({
+    Title = "ทำให้คนอื่นกระเด็น(ใช้ได้บางแมพ)",
+    Value = false,
+    Callback = function(value)
+        ToggleFling(value)
+    end
+})
+    local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer -- เพิ่มตรงนี้
+
+local hitboxEnabled = false
+local hitboxScale = Vector3.new(3, 3, 3)
+local hitboxes = {}
+
+local function createVisibleHitbox(character, player)
+    if player == LocalPlayer then return end  -- ไม่สร้าง hitbox ให้ตัวเอง
+
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+
+    if hitboxes[character] then
+        hitboxes[character]:Destroy()
+        hitboxes[character] = nil
+    end
+
+    local hitboxPart = Instance.new("Part")
+    hitboxPart.Name = "HitboxPart"
+    hitboxPart.Anchored = true
+    hitboxPart.Can
