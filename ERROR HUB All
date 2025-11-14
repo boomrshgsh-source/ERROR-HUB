@@ -594,4 +594,112 @@ local function createVisibleHitbox(character, player)
     local hitboxPart = Instance.new("Part")
     hitboxPart.Name = "HitboxPart"
     hitboxPart.Anchored = true
-    hitboxPart.Can
+    hitboxPart.CanCollide = false
+    hitboxPart.Transparency = 0.8
+    hitboxPart.Color = Color3.fromRGB(255, 255, 255)
+    hitboxPart.Material = Enum.Material.Neon
+    hitboxPart.Size = rootPart.Size * hitboxScale
+    hitboxPart.CFrame = rootPart.CFrame
+    hitboxPart.Parent = character
+
+    hitboxes[character] = hitboxPart
+
+    local connection
+    connection = RunService.Heartbeat:Connect(function()
+        if hitboxPart and rootPart and rootPart.Parent and hitboxEnabled then
+            hitboxPart.CFrame = rootPart.CFrame
+        else
+            if hitboxPart then hitboxPart:Destroy() end
+            if connection then connection:Disconnect() end
+        end
+    end)
+end
+
+local function updateAllHitboxes()
+    for _, player in pairs(Players:GetPlayers()) do
+        local character = player.Character
+        if character then
+            if hitboxEnabled and player ~= LocalPlayer then -- ยกเว้นตัวเอง
+                createVisibleHitbox(character, player)
+            else
+                if hitboxes[character] then
+                    hitboxes[character]:Destroy()
+                    hitboxes[character] = nil
+                end
+            end
+        end
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        wait(1)
+        if hitboxEnabled and player ~= LocalPlayer then
+            createVisibleHitbox(character, player)
+        end
+    end)
+end)
+
+for _, player in pairs(Players:GetPlayers()) do
+    if player.Character then
+        if hitboxEnabled and player ~= LocalPlayer then
+            createVisibleHitbox(player.Character, player)
+        end
+    end
+    player.CharacterAdded:Connect(function(character)
+        wait(1)
+        if hitboxEnabled and player ~= LocalPlayer then
+            createVisibleHitbox(character, player)
+        end
+    end)
+end
+
+local function ToggleHitbox(value)
+    hitboxEnabled = value
+    updateAllHitboxes()
+end
+
+local function SetHitboxScale(newScale)
+    hitboxScale = newScale
+    if hitboxEnabled then
+        updateAllHitboxes()
+    end
+end
+
+PlayerTab:Toggle({
+    Title = "ขยายฮิตบล็อก",
+    Value = false,
+    Callback = function(value)
+        ToggleHitbox(value)
+    end
+})
+
+PlayerTab:Slider({
+    Title = "ปรับฮิตบล็อก",
+    Min = 1,
+    Max = 200,
+    Default = 3,
+    Callback = function(value)
+        SetHitboxScale(Vector3.new(value, value, value))
+    end
+})
+----------------------------------------------------
+--== TAB: Credits ==--
+----------------------------------------------------
+local CreditTab = Window:Tab({Title = "Credits", Icon = "heart"}) do
+    CreditTab:Section({Title = "ผู้พัฒนา"})
+    CreditTab:Button({
+        Title = "📋 Copy Discord Link",
+        Desc = "คัดลอกลิงก์ Discord ของ ERROR HUB",
+        Callback = function()
+            setclipboard("https://discord.gg/eZwAXpwAt")
+            Window:Notify({Title = "Copied!", Desc = "ลิงก์ Discord ถูกคัดลอกแล้ว ✅", Time = 3})
+        end
+    })
+end
+
+Window:Notify({
+    Title = "ERROR HUB",
+    Desc = "✅ Loaded successfully!",
+    Time = 6
+})
