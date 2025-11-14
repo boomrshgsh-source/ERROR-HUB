@@ -707,25 +707,35 @@ PlayerTab:Slider({
         API_Bypass["_CR.DayToDay2044_Speed"] = value
     end
 })
-    --// Aimbot Data
+     --// Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+--// Aimbot Data
 local Aimbot = {
     Enabled = false,
     LockPart = "Head",
     Sensitivity = 0.2,
 }
 
+--// ฟังก์ชันเปิด/ปิด Aimbot
 local function ToggleAimLock(value)
     Aimbot.Enabled = value
 end
 
+--// ฟังก์ชันตั้ง LockPart
 local function SetAimLockPart(partName)
     Aimbot.LockPart = partName
 end
 
+--// ฟังก์ชันตั้ง Sensitivity
 local function SetSensitivity(value)
     Aimbot.Sensitivity = value
 end
 
+--// หาเป้าหมายใกล้เคียงที่สุดในจอ
 local function getClosestTarget()
     local closestPlayer = nil
     local closestDistance = math.huge
@@ -738,7 +748,7 @@ local function getClosestTarget()
             if onScreen then
                 local screenPos = Vector2.new(pos.X, pos.Y)
                 local dist = (screenPos - screenCenter).Magnitude
-                if dist < closestDistance and dist < 150 then
+                if dist < closestDistance and dist < 250 then -- เพิ่มระยะล็อกเป้า
                     closestDistance = dist
                     closestPlayer = plr
                 end
@@ -749,6 +759,7 @@ local function getClosestTarget()
     return closestPlayer
 end
 
+--// ฟังก์ชันล็อกเป้า
 local function aimAtTarget(target)
     if not target or not target.Character then return end
     local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -766,6 +777,7 @@ local function aimAtTarget(target)
     camera.CFrame = newCFrame
 end
 
+--// Loop อัปเดต Aimbot
 RunService.RenderStepped:Connect(function()
     if not Aimbot.Enabled then return end
     local target = getClosestTarget()
@@ -774,7 +786,9 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- เชื่อม UI ใน PlayerTab (สมมติ PlayerTab ถูกสร้างไว้แล้ว)
+--// เชื่อม UI
+-- สมมติว่ามีตัวแปร PlayerTab เป็น Tab ที่ใช้ใน UI Framework ของคุณ
+
 PlayerTab:Toggle({
     Title = "🔒 เปิด/ปิด AimLock",
     Value = false,
