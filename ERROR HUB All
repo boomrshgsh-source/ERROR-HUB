@@ -7,16 +7,13 @@ loadSound.Parent = SoundService
 loadSound:Play()
 game.Debris:AddItem(loadSound, 3)
 
---// UI Framework
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/x2zu/OPEN-SOURCE-UI-ROBLOX/refs/heads/main/X2ZU%20UI%20ROBLOX%20OPEN%20SOURCE/DummyUi-leak-by-x2zu/fetching-main/Tools/Framework.luau"))()
 
---// Services
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
---// หน้าต่างหลัก
 local Window = Library:Window({
     Title = "ERROR HUB",
     Desc = "Beta!!!!",
@@ -25,10 +22,6 @@ local Window = Library:Window({
     Config = { Keybind = Enum.KeyCode.LeftControl, Size = UDim2.new(0, 450, 0, 350) },
     CloseUIButton = { Enabled = true, Text = "ERROR" }
 })
-
-----------------------------------------------------
---== ฟังก์ชันระบบหลัก ==--
-----------------------------------------------------
 
 local humanoid
 local jumpEnabled, jumpValue = false, 100
@@ -123,9 +116,6 @@ player.CharacterAdded:Connect(function(char)
     reapplySettings()
 end)
 
-----------------------------------------------------
---== TAB: Main ==--
-----------------------------------------------------
 local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     MainTab:Toggle({
         Title = "🏃 วิ่งเร็ว",
@@ -175,9 +165,6 @@ local MainTab = Window:Tab({Title = "Main", Icon = "zap"}) do
     end)
 end
 
-----------------------------------------------------
---== TAB: TP ==--
-----------------------------------------------------
 local TPTab = Window:Tab({Title = "TP", Icon = "map-pin"})
 local selectedPlayerName, playerNames = "", {}
 
@@ -251,9 +238,6 @@ task.spawn(function()
     end
 end)
 
-----------------------------------------------------
---== TAB: Player (ESP 2D ด้านบนจอ) ==--
-----------------------------------------------------
 local PlayerTab = Window:Tab({Title = "Player", Icon = "user"}) do
     PlayerTab:Section({Title = "ESP"})
 
@@ -392,27 +376,25 @@ local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
---// UI setup
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TargetCircleUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
---// วงกลม UI ตรงกลางจอ
-local circleSize = 250 -- ขนาดวงกลม (px)
+local circleSize = 250 
 local circle = Instance.new("Frame")
 circle.Name = "CenterCircle"
 circle.Size = UDim2.fromOffset(circleSize, circleSize)
 circle.AnchorPoint = Vector2.new(0.5, 0.5)
 circle.Position = UDim2.fromScale(0.5, 0.5)
 circle.BackgroundTransparency = 1
-circle.Visible = false -- เริ่มซ่อนวงกลม
+circle.Visible = false 
 circle.Parent = screenGui
 
 local circleStroke = Instance.new("UIStroke")
 circleStroke.Thickness = 3
-circleStroke.Color = Color3.fromRGB(170, 0, 255) -- ม่วงนีออน
+circleStroke.Color = Color3.fromRGB(170, 0, 255) 
 circleStroke.Parent = circle
 
 local corner = Instance.new("UICorner")
@@ -424,22 +406,19 @@ aspect.AspectRatio = 1
 aspect.DominantAxis = Enum.DominantAxis.Height
 aspect.Parent = circle
 
---// ตัวแปรหลัก
 local radius = circleSize / 2
 local currentTween = nil
-local tweenDuration = 0.10 -- ความนุ่มนวลของการเล็ง
+local tweenDuration = 0.10 
 local updateInterval = 0.01
 local accumulatedTime = 0
-local lockEnabled = false -- เริ่มปิดล็อกเป้า
-local teamCheckEnabled = true -- เปิดตรวจสอบทีมโดยค่าเริ่มต้น
+local lockEnabled = false 
+local teamCheckEnabled = true
 
---// ฟังก์ชันตรวจสอบทีม
 local function IsEnemy(player)
     if not teamCheckEnabled then
-        return true -- ถ้าปิดตรวจสอบทีม ให้ถือว่าทุกคนเป็นศัตรู
+        return true
     end
     
-    -- ตรวจสอบว่าเกมมีระบบทีมหรือไม่
     if not game:GetService("Teams"):GetChildren() or #game:GetService("Teams"):GetChildren() == 0 then
         return true -- ถ้าไม่มีทีมในเกม ให้ถือว่าทุกคนเป็นศัตรู
     end
@@ -601,7 +580,6 @@ task.spawn(function()
     end
 end)
 
--- เชื่อมกับ PlayerTab UI toggle
 PlayerTab:Toggle({
     Title = "ทำให้คนอื่นกระเด็น(ใช้ได้บางแมพ)",
     Value = false,
