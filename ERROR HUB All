@@ -369,32 +369,35 @@ local PlayerTab = Window:Tab({Title = "Player", Icon = "user"}) do
         end
     })
 end
-     local Players = game:GetService("Players")
+     --// aimbot
+   local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
+--// UI setup
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TargetCircleUI"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
-local circleSize = 250 
+--// วงกลม UI ตรงกลางจอ
+local circleSize = 250 -- ขนาดวงกลม (px)
 local circle = Instance.new("Frame")
 circle.Name = "CenterCircle"
 circle.Size = UDim2.fromOffset(circleSize, circleSize)
 circle.AnchorPoint = Vector2.new(0.5, 0.5)
 circle.Position = UDim2.fromScale(0.5, 0.5)
 circle.BackgroundTransparency = 1
-circle.Visible = false 
+circle.Visible = false -- เริ่มซ่อนวงกลม
 circle.Parent = screenGui
 
 local circleStroke = Instance.new("UIStroke")
 circleStroke.Thickness = 3
-circleStroke.Color = Color3.fromRGB(170, 0, 255) 
+circleStroke.Color = Color3.fromRGB(170, 0, 255) -- ม่วงนีออน
 circleStroke.Parent = circle
 
 local corner = Instance.new("UICorner")
@@ -406,19 +409,82 @@ aspect.AspectRatio = 1
 aspect.DominantAxis = Enum.DominantAxis.Height
 aspect.Parent = circle
 
+--// UI แสดงข้อมูลเป้าหมาย
+local targetInfoFrame = Instance.new("Frame")
+targetInfoFrame.Name = "TargetInfo"
+targetInfoFrame.Size = UDim2.new(0, 200, 0, 100)
+targetInfoFrame.Position = UDim2.new(0.02, 0, 0.02, 0)
+targetInfoFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+targetInfoFrame.BackgroundTransparency = 0.7
+targetInfoFrame.BorderSizePixel = 0
+targetInfoFrame.Visible = false
+targetInfoFrame.Parent = screenGui
+
+local targetInfoCorner = Instance.new("UICorner")
+targetInfoCorner.CornerRadius = UDim.new(0, 8)
+targetInfoCorner.Parent = targetInfoFrame
+
+local targetTitle = Instance.new("TextLabel")
+targetTitle.Name = "TargetTitle"
+targetTitle.Size = UDim2.new(1, 0, 0, 30)
+targetTitle.Position = UDim2.new(0, 0, 0, 0)
+targetTitle.BackgroundTransparency = 1
+targetTitle.Text = "🎯 เป้าหมายปัจจุบัน"
+targetTitle.TextColor3 = Color3.new(1, 1, 1)
+targetTitle.TextSize = 16
+targetTitle.Font = Enum.Font.GothamBold
+targetTitle.Parent = targetInfoFrame
+
+local targetName = Instance.new("TextLabel")
+targetName.Name = "TargetName"
+targetName.Size = UDim2.new(1, 0, 0, 20)
+targetName.Position = UDim2.new(0, 0, 0, 30)
+targetName.BackgroundTransparency = 1
+targetName.Text = "ชื่อ: -"
+targetName.TextColor3 = Color3.new(1, 1, 1)
+targetName.TextSize = 14
+targetName.Font = Enum.Font.Gotham
+targetName.Parent = targetInfoFrame
+
+local targetHealth = Instance.new("TextLabel")
+targetHealth.Name = "TargetHealth"
+targetHealth.Size = UDim2.new(1, 0, 0, 20)
+targetHealth.Position = UDim2.new(0, 0, 0, 50)
+targetHealth.BackgroundTransparency = 1
+targetHealth.Text = "สุขภาพ: -"
+targetHealth.TextColor3 = Color3.new(1, 1, 1)
+targetHealth.TextSize = 14
+targetHealth.Font = Enum.Font.Gotham
+targetHealth.Parent = targetInfoFrame
+
+local targetDistance = Instance.new("TextLabel")
+targetDistance.Name = "TargetDistance"
+targetDistance.Size = UDim2.new(1, 0, 0, 20)
+targetDistance.Position = UDim2.new(0, 0, 0, 70)
+targetDistance.BackgroundTransparency = 1
+targetDistance.Text = "ระยะทาง: -"
+targetDistance.TextColor3 = Color3.new(1, 1, 1)
+targetDistance.TextSize = 14
+targetDistance.Font = Enum.Font.Gotham
+targetDistance.Parent = targetInfoFrame
+
+--// ตัวแปรหลัก
 local radius = circleSize / 2
 local currentTween = nil
-local tweenDuration = 0.10 
+local tweenDuration = 0.10 -- ความนุ่มนวลของการเล็ง
 local updateInterval = 0.01
 local accumulatedTime = 0
-local lockEnabled = false 
-local teamCheckEnabled = true
+local lockEnabled = false -- เริ่มปิดล็อกเป้า
+local teamCheckEnabled = true -- เปิดตรวจสอบทีมโดยค่าเริ่มต้น
+local currentTarget = nil -- เป้าหมายปัจจุบัน
 
+--// ฟังก์ชันตรวจสอบทีม
 local function IsEnemy(player)
     if not teamCheckEnabled then
-        return true
+        return true -- ถ้าปิดตรวจสอบทีม ให้ถือว่าทุกคนเป็นศัตรู
     end
     
+    -- ตรวจสอบว่าเกมมีระบบทีมหรือไม่
     if not game:GetService("Teams"):GetChildren() or #game:GetService("Teams"):GetChildren() == 0 then
         return true -- ถ้าไม่มีทีมในเกม ให้ถือว่าทุกคนเป็นศัตรู
     end
@@ -432,6 +498,95 @@ local function IsEnemy(player)
     end
     
     return false -- เป็นทีมเดียวกัน
+end
+
+--// ฟังก์ชันตรวจสอบกำแพง (Wall Check)
+local function CanSeeTarget(targetHead)
+    if not targetHead then return false end
+    
+    local cameraPos = Camera.CFrame.Position
+    local targetPos = targetHead.Position
+    
+    -- ตรวจสอบด้วย Raycast ว่ามีอะไรบังระหว่างกล้องกับเป้าหมาย
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {LocalPlayer.Character, targetHead.Parent}
+    raycastParams.IgnoreWater = true
+    
+    local raycastResult = workspace:Raycast(cameraPos, (targetPos - cameraPos), raycastParams)
+    
+    -- ถ้าไม่มีอะไรบัง หรือระยะทางน้อยมาก = สามารถเห็นเป้าหมายได้
+    if not raycastResult then
+        return true
+    end
+    
+    -- ตรวจสอบว่าสิ่งที่บังอยู่ใกล้กับเป้าหมายมากน้อยแค่ไหน
+    local hitDistance = (raycastResult.Position - cameraPos).Magnitude
+    local targetDistance = (targetPos - cameraPos).Magnitude
+    
+    -- ถ้าสิ่งที่บังอยู่ใกล้เป้าหมายมาก (เผื่อ误差เล็กน้อย) ให้ถือว่าเห็นเป้าหมาย
+    if math.abs(hitDistance - targetDistance) < 2 then
+        return true
+    end
+    
+    return false
+end
+
+--// ฟังก์ชันตรวจสอบว่าผู้เล่นยังมีชีวิตอยู่
+local function IsPlayerAlive(player)
+    if not player or not player.Character then
+        return false
+    end
+    
+    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        return false
+    end
+    
+    -- ตรวจสอบว่า Humanoid ยังมีสุขภาพและยังมีชีวิตอยู่
+    if humanoid.Health <= 0 then
+        return false
+    end
+    
+    return true
+end
+
+--// ฟังก์ชันอัปเดตข้อมูลเป้าหมาย
+local function UpdateTargetInfo(player)
+    if player and player.Character then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        local head = player.Character:FindFirstChild("Head")
+        
+        if humanoid and head then
+            -- คำนวณระยะทาง
+            local distance = (head.Position - Camera.CFrame.Position).Magnitude
+            local roundedDistance = math.floor(distance)
+            
+            -- อัปเดต UI
+            targetName.Text = "ชื่อ: " .. player.Name
+            targetHealth.Text = "สุขภาพ: " .. math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
+            targetDistance.Text = "ระยะทาง: " .. roundedDistance .. " studs"
+            
+            -- เปลี่ยนสีสุขภาพตามจำนวนเลือด
+            if humanoid.Health / humanoid.MaxHealth < 0.3 then
+                targetHealth.TextColor3 = Color3.new(1, 0, 0) -- สีแดงเมื่อเลือดน้อย
+            elseif humanoid.Health / humanoid.MaxHealth < 0.6 then
+                targetHealth.TextColor3 = Color3.new(1, 1, 0) -- สีเหลืองเมื่อเลือดปานกลาง
+            else
+                targetHealth.TextColor3 = Color3.new(0, 1, 0) -- สีเขียวเมื่อเลือดมาก
+            end
+            
+            targetInfoFrame.Visible = true
+            return
+        end
+    end
+    
+    -- ถ้าไม่มีเป้าหมาย
+    targetName.Text = "ชื่อ: -"
+    targetHealth.Text = "สุขภาพ: -"
+    targetDistance.Text = "ระยะทาง: -"
+    targetHealth.TextColor3 = Color3.new(1, 1, 1)
+    targetInfoFrame.Visible = false
 end
 
 --// ฟังก์ชันล็อกหัว
@@ -461,14 +616,19 @@ local function GetClosestTarget()
 		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
 			-- ตรวจสอบทีมก่อน
 			if IsEnemy(player) then
-				local head = player.Character.Head
-				local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-				if onScreen then
-					local head2D = Vector2.new(headPos.X, headPos.Y)
-					local distance = (head2D - screenCenter).Magnitude
-					if distance <= radius and distance < shortestDistance then
-						shortestDistance = distance
-						closestPlayer = player
+				-- ตรวจสอบว่าผู้เล่นยังมีชีวิตอยู่
+				if IsPlayerAlive(player) then
+					local head = player.Character.Head
+					local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+					if onScreen then
+						local head2D = Vector2.new(headPos.X, headPos.Y)
+						local distance = (head2D - screenCenter).Magnitude
+						
+						-- ตรวจสอบ Wall Check ด้วย
+						if distance <= radius and distance < shortestDistance and CanSeeTarget(head) then
+							shortestDistance = distance
+							closestPlayer = player
+						end
 					end
 				end
 			end
@@ -488,9 +648,13 @@ end
 local function ToggleAimLock(state)
 	lockEnabled = state
 	circle.Visible = state
-	if not state and currentTween then
-		currentTween:Cancel()
-		currentTween = nil
+	if not state then
+		currentTarget = nil
+		UpdateTargetInfo(nil)
+		if currentTween then
+			currentTween:Cancel()
+			currentTween = nil
+		end
 	end
 end
 
@@ -508,7 +672,14 @@ RunService.RenderStepped:Connect(function(deltaTime)
 		accumulatedTime = 0
 		local target = GetClosestTarget()
 		if target and target.Character and target.Character:FindFirstChild("Head") then
+			currentTarget = target
 			LockToHead(target.Character.Head)
+			UpdateTargetInfo(target)
+		else
+			if currentTarget then
+				currentTarget = nil
+				UpdateTargetInfo(nil)
+			end
 		end
 	end
 end)
