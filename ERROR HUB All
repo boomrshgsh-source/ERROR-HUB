@@ -385,8 +385,7 @@ local PlayerTab = Window:Tab({Title = "Player", Icon = "user"}) do
         end
     })
 end
-   --// LocalScript (ใส่ใน StarterPlayerScripts)
-local Players = game:GetService("Players")
+     local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
@@ -432,6 +431,29 @@ local tweenDuration = 0.10 -- ความนุ่มนวลของกา�
 local updateInterval = 0.01
 local accumulatedTime = 0
 local lockEnabled = false -- เริ่มปิดล็อกเป้า
+local teamCheckEnabled = true -- เปิดตรวจสอบทีมโดยค่าเริ่มต้น
+
+--// ฟังก์ชันตรวจสอบทีม
+local function IsEnemy(player)
+    if not teamCheckEnabled then
+        return true -- ถ้าปิดตรวจสอบทีม ให้ถือว่าทุกคนเป็นศัตรู
+    end
+    
+    -- ตรวจสอบว่าเกมมีระบบทีมหรือไม่
+    if not game:GetService("Teams"):GetChildren() or #game:GetService("Teams"):GetChildren() == 0 then
+        return true -- ถ้าไม่มีทีมในเกม ให้ถือว่าทุกคนเป็นศัตรู
+    end
+    
+    local localTeam = LocalPlayer.Team
+    local targetTeam = player.Team
+    
+    -- ถ้าผู้เล่นไม่มีทีม หรือทีมแตกต่างกัน = เป็นศัตรู
+    if not localTeam or not targetTeam or localTeam ~= targetTeam then
+        return true
+    end
+    
+    return false -- เป็นทีมเดียวกัน
+end
 
 --// ฟังก์ชันล็อกหัว
 local function LockToHead(targetHead)
@@ -458,14 +480,17 @@ local function GetClosestTarget()
 
 	for _, player in pairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
-			local head = player.Character.Head
-			local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
-			if onScreen then
-				local head2D = Vector2.new(headPos.X, headPos.Y)
-				local distance = (head2D - screenCenter).Magnitude
-				if distance <= radius and distance < shortestDistance then
-					shortestDistance = distance
-					closestPlayer = player
+			-- ตรวจสอบทีมก่อน
+			if IsEnemy(player) then
+				local head = player.Character.Head
+				local headPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+				if onScreen then
+					local head2D = Vector2.new(headPos.X, headPos.Y)
+					local distance = (head2D - screenCenter).Magnitude
+					if distance <= radius and distance < shortestDistance then
+						shortestDistance = distance
+						closestPlayer = player
+					end
 				end
 			end
 		end
@@ -488,6 +513,11 @@ local function ToggleAimLock(state)
 		currentTween:Cancel()
 		currentTween = nil
 	end
+end
+
+--// ฟังก์ชันเปิด/ปิด Team Check
+local function ToggleTeamCheck(state)
+	teamCheckEnabled = state
 end
 
 --// อัปเดตล็อกเป้าทุกเฟรม (จำกัดอัปเดตจริงตาม updateInterval)
@@ -520,6 +550,14 @@ PlayerTab:Slider({
 	Value = radius * 2,
 	Callback = function(val)
 		SetCircleSize(val)
+	end
+})
+
+PlayerTab:Toggle({
+	Title = "ตรวจสอบทีม (ไม่ล็อกทีมเดียวกัน)",
+	Value = teamCheckEnabled,
+	Callback = function(value)
+		ToggleTeamCheck(value)
 	end
 })
    local RunService = game:GetService("RunService")
@@ -569,118 +607,6 @@ PlayerTab:Toggle({
     Value = false,
     Callback = function(value)
         ToggleFling(value)
-    end
-})
-    local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-
-local LocalPlayer = Players.LocalPlayer -- เพิ่มตรงนี้
-
-local hitboxEnabled = false
-local hitboxScale = Vector3.new(3, 3, 3)
-local hitboxes = {}
-
-local function createVisibleHitbox(character, player)
-    if player == LocalPlayer then return end  -- ไม่สร้าง hitbox ให้ตัวเอง
-
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-
-    if hitboxes[character] then
-        hitboxes[character]:Destroy()
-        hitboxes[character] = nil
-    end
-
-    local hitboxPart = Instance.new("Part")
-    hitboxPart.Name = "HitboxPart"
-    hitboxPart.Anchored = true
-    hitboxPart.CanCollide = false
-    hitboxPart.Transparency = 0.8
-    hitboxPart.Color = Color3.fromRGB(255, 255, 255)
-    hitboxPart.Material = Enum.Material.Neon
-    hitboxPart.Size = rootPart.Size * hitboxScale
-    hitboxPart.CFrame = rootPart.CFrame
-    hitboxPart.Parent = character
-
-    hitboxes[character] = hitboxPart
-
-    local connection
-    connection = RunService.Heartbeat:Connect(function()
-        if hitboxPart and rootPart and rootPart.Parent and hitboxEnabled then
-            hitboxPart.CFrame = rootPart.CFrame
-        else
-            if hitboxPart then hitboxPart:Destroy() end
-            if connection then connection:Disconnect() end
-        end
-    end)
-end
-
-local function updateAllHitboxes()
-    for _, player in pairs(Players:GetPlayers()) do
-        local character = player.Character
-        if character then
-            if hitboxEnabled and player ~= LocalPlayer then -- ยกเว้นตัวเอง
-                createVisibleHitbox(character, player)
-            else
-                if hitboxes[character] then
-                    hitboxes[character]:Destroy()
-                    hitboxes[character] = nil
-                end
-            end
-        end
-    end
-end
-
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
-        wait(1)
-        if hitboxEnabled and player ~= LocalPlayer then
-            createVisibleHitbox(character, player)
-        end
-    end)
-end)
-
-for _, player in pairs(Players:GetPlayers()) do
-    if player.Character then
-        if hitboxEnabled and player ~= LocalPlayer then
-            createVisibleHitbox(player.Character, player)
-        end
-    end
-    player.CharacterAdded:Connect(function(character)
-        wait(1)
-        if hitboxEnabled and player ~= LocalPlayer then
-            createVisibleHitbox(character, player)
-        end
-    end)
-end
-
-local function ToggleHitbox(value)
-    hitboxEnabled = value
-    updateAllHitboxes()
-end
-
-local function SetHitboxScale(newScale)
-    hitboxScale = newScale
-    if hitboxEnabled then
-        updateAllHitboxes()
-    end
-end
-
-PlayerTab:Toggle({
-    Title = "ขยายฮิตบล็อก",
-    Value = false,
-    Callback = function(value)
-        ToggleHitbox(value)
-    end
-})
-
-PlayerTab:Slider({
-    Title = "ปรับฮิตบล็อก",
-    Min = 1,
-    Max = 200,
-    Default = 3,
-    Callback = function(value)
-        SetHitboxScale(Vector3.new(value, value, value))
     end
 })
 
