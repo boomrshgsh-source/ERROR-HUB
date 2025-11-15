@@ -686,7 +686,7 @@ end)
 
 --// UI Framework: PlayerTab toggle และ slider (สมมติ PlayerTab มีอยู่แล้ว)
 PlayerTab:Toggle({
-	Title = "ล็อกหัว(มันกากอยู่)",
+	Title = "ล็อกหัว",
 	Value = false,
 	Callback = function(value)
 		ToggleAimLock(value)
