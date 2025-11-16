@@ -583,8 +583,8 @@ local function UpdateTargetInfo(player)
     
     -- ถ้าไม่มีเป้าหมาย
     targetName.Text = "ชื่อ: -"
-    targetHealth.Text = "สุขภาพ: -"
-    targetDistance.Text = "ระยะทาง: -"
+    targetHealth.Text = "เลือด: -"
+    targetDistance.Text = "ระยะห่าง: -"
     targetHealth.TextColor3 = Color3.new(1, 1, 1)
     targetInfoFrame.Visible = false
 end
