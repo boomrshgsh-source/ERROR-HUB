@@ -389,8 +389,8 @@ local circleSize = 250 -- ขนาดวงกลม (px)
 local circle = Instance.new("Frame")
 circle.Name = "CenterCircle"
 circle.Size = UDim2.fromOffset(circleSize, circleSize)
-circle.AnchorPoint = Vector2.new(0.5, 0.5)
-circle.Position = UDim2.fromScale(0.5, 0.5)
+circle.AnchorPoint = Vector2.new(0.1, 0.1)
+circle.Position = UDim2.fromScale(0.1, 0.1)
 circle.BackgroundTransparency = 1
 circle.Visible = false -- เริ่มซ่อนวงกลม
 circle.Parent = screenGui
@@ -564,8 +564,8 @@ local function UpdateTargetInfo(player)
             
             -- อัปเดต UI
             targetName.Text = "ชื่อ: " .. player.Name
-            targetHealth.Text = "สุขภาพ: " .. math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
-            targetDistance.Text = "ระยะทาง: " .. roundedDistance .. " studs"
+            targetHealth.Text = "เลือด: " .. math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
+            targetDistance.Text = "ระยะห่าง: " .. roundedDistance .. " studs"
             
             -- เปลี่ยนสีสุขภาพตามจำนวนเลือด
             if humanoid.Health / humanoid.MaxHealth < 0.3 then
