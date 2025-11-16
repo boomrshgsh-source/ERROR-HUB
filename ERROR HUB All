@@ -378,45 +378,30 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 --// UI setup
-local playerGui = LocalPlayer:WaitForChild("PlayerGui")
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "TargetCircleUI"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
-
---// วงกลม UI ตรงกลางจอ
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-local PlayerGui = Player:WaitForChild("PlayerGui")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
--- GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.IgnoreGuiInset = true
-screenGui.Parent = PlayerGui
-
-local size = 250
-
--- วงกลมจาก Frame + UICorner
+local circleSize = 250 -- ขนาดวงกลม (px)
 local circle = Instance.new("Frame")
-circle.Name = "NeonCircle"
-circle.Size = UDim2.fromOffset(size, size)
+circle.Name = "CenterCircle"
+circle.Size = UDim2.fromOffset(circleSize, circleSize)
 circle.AnchorPoint = Vector2.new(0.5, 0.5)
 circle.BackgroundTransparency = 1
+circle.Visible = false -- เริ่มซ่อนวงกลม
 circle.Parent = screenGui
+
+local circleStroke = Instance.new("UIStroke")
+circleStroke.Thickness = 3
+circleStroke.Color = Color3.fromRGB(170, 0, 255) -- ม่วงนีออน
+circleStroke.Parent = circle
 
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(1, 0)
 corner.Parent = circle
 
--- เส้นขอบนีออน
-local stroke = Instance.new("UIStroke")
-stroke.Thickness = 6
-stroke.Color = Color3.fromRGB(170, 0, 255) -- เริ่มม่วง
-stroke.Parent = circle
-
--- ให้วงกลมอยู่กลางจอจริง ๆ
+-------------------------------------------------------
+-- 🎯 ให้ตำแหน่งอยู่กลางจอจริง ๆ (Fix SafeArea)
+-------------------------------------------------------
 RunService.RenderStepped:Connect(function()
 	local cx = screenGui.AbsoluteSize.X / 2
 	local cy = screenGui.AbsoluteSize.Y / 2
@@ -424,7 +409,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -------------------------------------------------------
--- 🔥 ANIMATION: สีขอบสลับไปมาระหว่างม่วง ↔ ชมพู
+-- 🔥 เปลี่ยนสีสลับไปมาม่วง ↔ ชมพู
 -------------------------------------------------------
 
 local purple = Color3.fromRGB(170, 0, 255)
@@ -432,7 +417,7 @@ local pink   = Color3.fromRGB(255, 0, 180)
 
 local function tweenColor(toColor)
 	local tween = TweenService:Create(
-		stroke,
+		circleStroke,
 		TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
 		{ Color = toColor }
 	)
