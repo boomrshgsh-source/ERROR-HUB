@@ -412,11 +412,12 @@ circleStroke.Parent = circle
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(1, 0) -- 1 = กลมเต็ม
 corner.Parent = circle
+
 --// UI แสดงข้อมูลเป้าหมาย
 local targetInfoFrame = Instance.new("Frame")
 targetInfoFrame.Name = "TargetInfo"
-targetInfoFrame.Size = UDim2.new(0, 150, 0, 100)
-targetInfoFrame.Position = UDim2.new(0.02, 0, 0.02, 0)
+targetInfoFrame.Size = UDim2.new(0, 200, 0, 100)
+targetInfoFrame.Position = UDim2.new(0.02, 0, 0.02, 100)
 targetInfoFrame.BackgroundColor3 = Color3.new(0, 0, 0)
 targetInfoFrame.BackgroundTransparency = 0.7
 targetInfoFrame.BorderSizePixel = 0
