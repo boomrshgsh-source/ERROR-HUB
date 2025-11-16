@@ -378,59 +378,40 @@ local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 --// UI setup
-local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
-local circleSize = 250 -- ขนาดวงกลม (px)
+-- สร้าง ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "AimbotUI"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true -- สำคัญให้ตรงกลางจริง
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- ขนาดวงกลม
+local circleSize = 250
+
+-- สร้าง Frame สำหรับวงกลม
 local circle = Instance.new("Frame")
 circle.Name = "CenterCircle"
 circle.Size = UDim2.fromOffset(circleSize, circleSize)
-circle.AnchorPoint = Vector2.new(0.5, 0.5)
-circle.BackgroundTransparency = 1
-circle.Visible = false -- เริ่มซ่อนวงกลม
+circle.AnchorPoint = Vector2.new(0.5, 0.5) -- จุดอ้างอิงกลาง
+circle.Position = UDim2.fromScale(0.5, 0.5) -- ตรงกลางจอ
+circle.BackgroundTransparency = 1 -- ใสโปร่งด้านใน
+circle.Visible = true
 circle.Parent = screenGui
 
+-- สร้างเส้นวงนอก (Stroke)
 local circleStroke = Instance.new("UIStroke")
 circleStroke.Thickness = 3
 circleStroke.Color = Color3.fromRGB(170, 0, 255) -- ม่วงนีออน
+circleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 circleStroke.Parent = circle
 
+-- ทำให้เป็นวงกลมเต็ม
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(1, 0)
+corner.CornerRadius = UDim.new(1, 0) -- 1 = กลมเต็ม
 corner.Parent = circle
-
--------------------------------------------------------
--- 🎯 ให้ตำแหน่งอยู่กลางจอจริง ๆ (Fix SafeArea)
--------------------------------------------------------
-RunService.RenderStepped:Connect(function()
-	local cx = screenGui.AbsoluteSize.X / 2
-	local cy = screenGui.AbsoluteSize.Y / 2
-	circle.Position = UDim2.fromOffset(cx, cy)
-end)
-
--------------------------------------------------------
--- 🔥 เปลี่ยนสีสลับไปมาม่วง ↔ ชมพู
--------------------------------------------------------
-
-local purple = Color3.fromRGB(170, 0, 255)
-local pink   = Color3.fromRGB(255, 0, 180)
-
-local function tweenColor(toColor)
-	local tween = TweenService:Create(
-		circleStroke,
-		TweenInfo.new(1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
-		{ Color = toColor }
-	)
-	tween:Play()
-	tween.Completed:Wait()
-end
-
-task.spawn(function()
-	while true do
-		tweenColor(pink)
-		tweenColor(purple)
-	end
-end)
 --// UI แสดงข้อมูลเป้าหมาย
 local targetInfoFrame = Instance.new("Frame")
 targetInfoFrame.Name = "TargetInfo"
