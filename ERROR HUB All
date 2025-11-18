@@ -943,7 +943,7 @@ end)
 -- ตรวจ PlayerTab ก่อนใช้งาน
 if PlayerTab then
     PlayerTab:Toggle({
-        Title = "ชักว่าว🤫",
+        Title = "ชักว่าว",
         Value = false,
         Callback = function(value)
             ToggleAnimation(value)
