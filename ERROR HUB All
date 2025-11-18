@@ -853,21 +853,22 @@ PlayerTab:Toggle({
         end
     end
 })
-
-local TrollTab = Window:Tab({Title = "Troll", Icon = "gun"}) do
- local plr = game:GetService("Players").LocalPlayer
+local plr = game:GetService("Players").LocalPlayer
 local char = plr.Character or plr.CharacterAdded:Wait()
 local hum = char:FindFirstChild("Humanoid") or char:WaitForChild("Humanoid")
 local anim = hum:FindFirstChildOfClass("Animator") or hum:WaitForChild("Animator")
 
+-- ลบ "aaa" ถ้ามีใน workspace
 if workspace:FindFirstChild("aaa") then
     workspace:FindFirstChild("aaa"):Destroy()
 end
 
+-- ฟังก์ชันตรวจ R15/R6
 local function getmodel()
     return hum.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
 end
 
+-- สร้าง Animation
 local animation = Instance.new("Animation")
 animation.Name = "aaa"
 animation.Parent = workspace
@@ -876,6 +877,7 @@ animation.AnimationId = getmodel() == "R15" and "rbxassetid://698251653" or "rbx
 local animtrack = nil
 local doing = false
 
+-- ฟังก์ชันเปิด/ปิดอนิเมชัน
 local function ToggleAnimation(value)
     doing = value
 
@@ -886,6 +888,7 @@ local function ToggleAnimation(value)
         end
         animtrack:Play()
 
+        -- ลูปช่วง 0.6 – 0.7
         task.spawn(function()
             while doing and animtrack do
                 animtrack.TimePosition = 0.6
@@ -901,11 +904,15 @@ local function ToggleAnimation(value)
     end
 end
 
+-- หยุดอนิเมชันเมื่อ Humanoid ตาย
 hum.Died:Connect(function()
     ToggleAnimation(false)
 end)
-TrollTab:Toggle({
-    Title = "ชักว่าว🤫",
+
+-- ตัวอย่างการเชื่อมกับ UI Toggle
+-- สมมติคุณมี Library UI ที่ชื่อ PlayerTab
+PlayerTab:Toggle({
+    Title = "ชัดว่าว🤫",
     Value = false,
     Callback = function(value)
         ToggleAnimation(value)
