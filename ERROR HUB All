@@ -855,51 +855,59 @@ PlayerTab:Toggle({
 })
 local plr = game:GetService("Players").LocalPlayer
 local char = plr.Character or plr.CharacterAdded:Wait()
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
+local char = plr.Character or plr.CharacterAdded:Wait()
 local hum = char:FindFirstChild("Humanoid") or char:WaitForChild("Humanoid")
-local anim = hum:FindFirstChildOfClass("Animator") or hum:WaitForChild("Animator")
 
--- ลบ "aaa" ถ้ามีใน workspace
-if workspace:FindFirstChild("aaa") then
-    workspace:FindFirstChild("aaa"):Destroy()
+-- ตรวจ Animator
+local anim = hum:FindFirstChildOfClass("Animator")
+if not anim then
+    anim = Instance.new("Animator")
+    anim.Parent = hum
 end
 
--- ฟังก์ชันตรวจ R15/R6
-local function getmodel()
+-- ลบ Animation เก่าถ้ามี
+local existingAnimation = workspace:FindFirstChild("aaa")
+if existingAnimation then
+    existingAnimation:Destroy()
+end
+
+-- ตรวจ R15/R6
+local function getRigType()
     return hum.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
 end
 
 -- สร้าง Animation
 local animation = Instance.new("Animation")
 animation.Name = "aaa"
-animation.Parent = workspace
-animation.AnimationId = getmodel() == "R15" and "rbxassetid://698251653" or "rbxassetid://72042024"
+animation.AnimationId = getRigType() == "R15" and "rbxassetid://698251653" or "rbxassetid://72042024"
 
-local animtrack = nil
-local doing = false
+local animTrack = nil
+local isPlaying = false
 
--- ฟังก์ชันเปิด/ปิดอนิเมชัน
 local function ToggleAnimation(value)
-    doing = value
+    isPlaying = value
 
-    if doing then
-        if not animtrack then
-            animtrack = anim:LoadAnimation(animation)
-            animtrack:AdjustSpeed(0.7)
+    if isPlaying then
+        if not animTrack then
+            animTrack = anim:LoadAnimation(animation)
+            animTrack:AdjustSpeed(0.7)
         end
-        animtrack:Play()
+        animTrack:Play()
 
-        -- ลูปช่วง 0.6 – 0.7
+        -- ลูปช่วง 0.6 – 0.7 วินาที
         task.spawn(function()
-            while doing and animtrack do
-                animtrack.TimePosition = 0.6
+            while isPlaying and animTrack and animTrack.IsPlaying do
+                animTrack.TimePosition = 0.6
                 task.wait(0.1)
             end
         end)
     else
-        if animtrack then
-            animtrack:Stop()
-            animtrack:Destroy()
-            animtrack = nil
+        if animTrack then
+            animTrack:Stop()
+            animTrack:Destroy()
+            animTrack = nil
         end
     end
 end
@@ -909,15 +917,18 @@ hum.Died:Connect(function()
     ToggleAnimation(false)
 end)
 
--- ตัวอย่างการเชื่อมกับ UI Toggle
--- สมมติคุณมี Library UI ที่ชื่อ PlayerTab
-PlayerTab:Toggle({
-    Title = "ชัดว่าว🤫",
-    Value = false,
-    Callback = function(value)
-        ToggleAnimation(value)
-    end
-})
+-- ตรวจ PlayerTab ก่อนใช้งาน
+if PlayerTab then
+    PlayerTab:Toggle({
+        Title = "ชักว่าว🤫",
+        Value = false,
+        Callback = function(value)
+            ToggleAnimation(value)
+        end
+    })
+else
+    warn("PlayerTab ไม่ถูกสร้าง: UI toggle จะไม่ทำงาน")
+end
 
 local CreditTab = Window:Tab({Title = "Credits", Icon = "heart"}) do
     CreditTab:Section({Title = "ผู้พัฒนา"})
