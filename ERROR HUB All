@@ -887,13 +887,21 @@ animation.AnimationId = getRigType() == "R15" and "rbxassetid://698251653" or "r
 local animTrack = nil
 local isPlaying = false
 
--- ลูป TimePosition ผ่าน Heartbeat
+-- ลูป TimePosition ทุก 0.1 วินาที
 local heartbeatConn = nil
+local elapsed = 0
+local loopInterval = 0.1
+
 local function startLoop()
     if heartbeatConn then return end
-    heartbeatConn = RunService.Heartbeat:Connect(function()
+    elapsed = 0
+    heartbeatConn = RunService.Heartbeat:Connect(function(dt)
         if isPlaying and animTrack then
-            animTrack.TimePosition = 0.6
+            elapsed = elapsed + dt
+            if elapsed >= loopInterval then
+                animTrack.TimePosition = 0.6
+                elapsed = 0
+            end
         end
     end)
 end
