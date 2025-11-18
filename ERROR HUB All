@@ -854,7 +854,7 @@ PlayerTab:Toggle({
     end
 })
 
- local Tab18 = Window:Tab({
+ local TrollTab = Window:Tab({
     Title = "18+",
     Icon = "💢"
 })
@@ -907,13 +907,7 @@ end
 hum.Died:Connect(function()
     ToggleAnimation(false)
 end)
-
-local 18+Tab = Window:Tab({
-    Title = "18+",
-    Icon = "💢"
-})
-
-18+Tab:Toggle({
+TrollTab:Toggle({
     Title = "ชักว่าว🤫",
     Value = false,
     Callback = function(value)
