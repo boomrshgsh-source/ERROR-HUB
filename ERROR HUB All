@@ -858,39 +858,66 @@ PlayerTab:Toggle({
     Title = "18+",
     Icon = "💢"
 })
-local Players = game:GetService("Players")
-local plr = Players.LocalPlayer
+local plr = game:GetService("Players").LocalPlayer
 local char = plr.Character or plr.CharacterAdded:Wait()
-local hum = char:WaitForChild("Humanoid")
-local animator = hum:WaitForChild("Animator")
+local hum = char:FindFirstChild("Humanoid") or char:WaitForChild("Humanoid")
+local anim = hum:FindFirstChildOfClass("Animator") or hum:WaitForChild("Animator")
 
-local function getAnimId()
-    if hum.RigType == Enum.HumanoidRigType.R15 then
-        return "rbxassetid://698251653"
+if workspace:FindFirstChild("aaa") then
+    workspace:FindFirstChild("aaa"):Destroy()
+end
+
+local function getmodel()
+    return hum.RigType == Enum.HumanoidRigType.R15 and "R15" or "R6"
+end
+
+local animation = Instance.new("Animation")
+animation.Name = "aaa"
+animation.Parent = workspace
+animation.AnimationId = getmodel() == "R15" and "rbxassetid://698251653" or "rbxassetid://72042024"
+
+local animtrack = nil
+local doing = false
+
+local function ToggleAnimation(value)
+    doing = value
+
+    if doing then
+        if not animtrack then
+            animtrack = anim:LoadAnimation(animation)
+            animtrack:AdjustSpeed(0.7)
+        end
+        animtrack:Play()
+
+        task.spawn(function()
+            while doing and animtrack do
+                animtrack.TimePosition = 0.6
+                task.wait(0.1)
+            end
+        end)
     else
-        return "rbxassetid://72042024"
+        if animtrack then
+            animtrack:Stop()
+            animtrack:Destroy()
+            animtrack = nil
+        end
     end
 end
 
-local anim = Instance.new("Animation")
-anim.AnimationId = getAnimId()
+hum.Died:Connect(function()
+    ToggleAnimation(false)
+end)
 
-local track = animator:LoadAnimation(anim)
-track.Looped = true
+local 18+Tab = Window:Tab({
+    Title = "18+",
+    Icon = "💢"
+})
 
-local function ToggleAnim(state)
-    if state then
-        track:Play()
-    else
-        track:Stop()
-    end
-end
-
-Tab18:Toggle({
-    Title = "เปิด/ปิด Animation",
+18+Tab:Toggle({
+    Title = "ชักว่าว🤫",
     Value = false,
     Callback = function(value)
-        ToggleAnim(value)
+        ToggleAnimation(value)
     end
 })
 
