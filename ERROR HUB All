@@ -854,11 +854,8 @@ PlayerTab:Toggle({
     end
 })
 
- local TrollTab = Window:Tab({
-    Title = "18+",
-    Icon = "💢"
-})
-local plr = game:GetService("Players").LocalPlayer
+local TrollTab = Window:Tab({Title = "Troll", Icon = "gun"}) do
+ local plr = game:GetService("Players").LocalPlayer
 local char = plr.Character or plr.CharacterAdded:Wait()
 local hum = char:FindFirstChild("Humanoid") or char:WaitForChild("Humanoid")
 local anim = hum:FindFirstChildOfClass("Animator") or hum:WaitForChild("Animator")
