@@ -853,7 +853,47 @@ PlayerTab:Toggle({
         end
     end
 })
- 
+
+ local Tab18 = Window:Tab({
+    Title = "18+",
+    Icon = "💢"
+})
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
+local char = plr.Character or plr.CharacterAdded:Wait()
+local hum = char:WaitForChild("Humanoid")
+local animator = hum:WaitForChild("Animator")
+
+local function getAnimId()
+    if hum.RigType == Enum.HumanoidRigType.R15 then
+        return "rbxassetid://698251653"
+    else
+        return "rbxassetid://72042024"
+    end
+end
+
+local anim = Instance.new("Animation")
+anim.AnimationId = getAnimId()
+
+local track = animator:LoadAnimation(anim)
+track.Looped = true
+
+local function ToggleAnim(state)
+    if state then
+        track:Play()
+    else
+        track:Stop()
+    end
+end
+
+Tab18:Toggle({
+    Title = "เปิด/ปิด Animation",
+    Value = false,
+    Callback = function(value)
+        ToggleAnim(value)
+    end
+})
+
 local CreditTab = Window:Tab({Title = "Credits", Icon = "heart"}) do
     CreditTab:Section({Title = "ผู้พัฒนา"})
     CreditTab:Button({
