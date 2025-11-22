@@ -293,9 +293,7 @@ local plr = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
--- ===================== ESP =====================
 local esp, espEnabled, RunServiceConnection = {}, false, nil
-
 local function createDrawsFor(p)
     if esp[p] then return end
     local line = Drawing.new("Line")
@@ -432,7 +430,6 @@ local function stopESP()
     if RunServiceConnection then RunServiceConnection:Disconnect() RunServiceConnection=nil end
     clearAllDraws()
 end
-
 PlayerTab:Toggle({
     Title="ESP",
     Desc="มองเห็นผู้เล่น",
