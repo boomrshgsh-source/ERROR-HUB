@@ -287,17 +287,15 @@ task.spawn(function()
 end)
 
 local PlayerTab = Window:Tab({Title = "Player", Icon = "user"}) do
-    PlayerTab:Section({Title = "ESP"})
--- Services
+   -- Services
 local Players = game:GetService("Players")
 local plr = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 
--- Variables
+-- ===================== ESP =====================
 local esp, espEnabled, RunServiceConnection = {}, false, nil
 
--- ===================== ESP Functions =====================
 local function createDrawsFor(p)
     if esp[p] then return end
     local line = Drawing.new("Line")
@@ -419,7 +417,6 @@ local function updateESP()
     end
 end
 
--- ===================== Start/Stop ESP =====================
 local function startESP()
     if espEnabled then return end
     espEnabled=true
@@ -436,18 +433,19 @@ local function stopESP()
     clearAllDraws()
 end
 
--- ===================== Toggle สำหรับ UI x2zu =====================
 PlayerTab:Toggle({
-    Title = "มองคนในเซิฟ",
-    Value = false,
-    Callback = function(v)
+    Title="ESP",
+    Desc="มองเห็นผู้เล่น",
+    Value=false,
+    Callback=function(v)
         if v then
             startESP()
         else
             stopESP()
         end
     end
-})
+}) 
+
      --// aimbot
    local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
