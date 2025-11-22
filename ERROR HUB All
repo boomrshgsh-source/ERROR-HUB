@@ -285,10 +285,9 @@ task.spawn(function()
         PlayerListBox:SetCode(table.concat(playerNames, "\n"))
     end
 end)
-
 local PlayerTab = Window:Tab({Title = "Player", Icon = "user"}) do
    
-     --// aimbot
+--// aimbot
    local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
