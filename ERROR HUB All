@@ -288,135 +288,166 @@ end)
 
 local PlayerTab = Window:Tab({Title = "Player", Icon = "user"}) do
     PlayerTab:Section({Title = "ESP"})
+-- Services
+local Players = game:GetService("Players")
+local plr = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
 
-    local Camera = workspace.CurrentCamera
-    local esp, espEnabled, RunServiceConnection = {}, false, nil
+-- Variables
+local esp, espEnabled, RunServiceConnection = {}, false, nil
 
-    repeat task.wait() until Camera and Camera.ViewportSize.X > 0
+-- ===================== ESP Functions =====================
+local function createDrawsFor(p)
+    if esp[p] then return end
+    local line = Drawing.new("Line")
+    line.Color = Color3.fromRGB(170,0,255)
+    line.Thickness = 1.6
+    line.Transparency = 1
+    line.Visible = false
 
-    local function createDrawsFor(plr)
-        if esp[plr] then return end
-        local line = Drawing.new("Line")
-        line.Color = Color3.fromRGB(170, 0, 255)
-        line.Thickness = 1.6
-        line.Transparency = 1
-        line.Visible = false
-
-        local boxLines = {}
-        for i = 1, 4 do
-            local l = Drawing.new("Line")
-            l.Color = Color3.fromRGB(170, 0, 255)
-            l.Thickness = 1.4
-            l.Transparency = 1
-            l.Visible = false
-            table.insert(boxLines, l)
-        end
-
-        local txt = Drawing.new("Text")
-        txt.Color = Color3.fromRGB(255, 255, 255)
-        txt.Size = 14
-        txt.Center = true
-        txt.Outline = true
-        txt.Font = 2
-        txt.Visible = false
-
-        esp[plr] = { Line = line, BoxLines = boxLines, Text = txt }
+    local boxLines = {}
+    for i=1,4 do
+        local l = Drawing.new("Line")
+        l.Color = Color3.fromRGB(170,0,255)
+        l.Thickness = 1.4
+        l.Transparency = 1
+        l.Visible = false
+        table.insert(boxLines,l)
     end
 
-    local function removeDrawsFor(plr)
-        local o = esp[plr]
-        if not o then return end
-        if o.Line then o.Line:Remove() end
-        for _, l in pairs(o.BoxLines or {}) do l:Remove() end
-        if o.Text then o.Text:Remove() end
-        esp[plr] = nil
-    end
+    local healthBar = Drawing.new("Line")
+    healthBar.Thickness = 4
+    healthBar.Transparency = 1
+    healthBar.Visible = false
 
-    local function clearAllDraws()
-        for plr in pairs(esp) do removeDrawsFor(plr) end
-    end
+    local txt = Drawing.new("Text")
+    txt.Color = Color3.fromRGB(255,255,255)
+    txt.Size = 14
+    txt.Center = true
+    txt.Outline = true
+    txt.Font = 2
+    txt.Visible = false
 
-    local function updateESP()
-        if not espEnabled then return end
-        local viewport = Camera.ViewportSize
-        local topCenter = Vector2.new(viewport.X * 0.5, 0) -- 🔥 จุดกึ่งกลางด้านบนของจอ
+    esp[p] = {Line=line, BoxLines=boxLines, HealthBar=healthBar, Text=txt}
+end
 
-        for plr, d in pairs(esp) do
-            local char = plr.Character
-            if not char then
-                d.Line.Visible = false
-                for _, l in pairs(d.BoxLines) do l.Visible = false end
-                d.Text.Visible = false
+local function removeDrawsFor(p)
+    local d = esp[p]
+    if not d then return end
+    if d.Line then d.Line:Remove() end
+    for _, l in pairs(d.BoxLines or {}) do l:Remove() end
+    if d.HealthBar then d.HealthBar:Remove() end
+    if d.Text then d.Text:Remove() end
+    esp[p] = nil
+end
+
+local function clearAllDraws()
+    for p in pairs(esp) do removeDrawsFor(p) end
+end
+
+local function updateESP()
+    if not espEnabled then return end
+    local viewport = Camera.ViewportSize
+    local topCenter = Vector2.new(viewport.X/2, 0)
+    for p,d in pairs(esp) do
+        local char = p.Character
+        if not char then
+            d.Line.Visible=false
+            for _,l in pairs(d.BoxLines) do l.Visible=false end
+            d.Text.Visible=false
+            d.HealthBar.Visible=false
+        else
+            local head = char:FindFirstChild("Head")
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if not head or not hrp or not humanoid then
+                d.Line.Visible=false
+                for _,l in pairs(d.BoxLines) do l.Visible=false end
+                d.Text.Visible=false
+                d.HealthBar.Visible=false
             else
-                local head = char:FindFirstChild("Head")
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if not head or not hrp then continue end
-
-                local rootScreen, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-                local headScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.4, 0))
-                local footScreen = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 2.5, 0))
+                local rootScreen,onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                local headScreen = Camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.4,0))
+                local footScreen = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0,2.5,0))
 
                 if onScreen then
-                    local height = math.abs(headScreen.Y - footScreen.Y)
-                    local width = height / 2
-                    local topLeft = Vector2.new(rootScreen.X - width / 2, rootScreen.Y - height / 2)
-                    local topRight = Vector2.new(rootScreen.X + width / 2, rootScreen.Y - height / 2)
-                    local bottomLeft = Vector2.new(rootScreen.X - width / 2, rootScreen.Y + height / 2)
-                    local bottomRight = Vector2.new(rootScreen.X + width / 2, rootScreen.Y + height / 2)
-
-                    d.BoxLines[1].From, d.BoxLines[1].To = topLeft, topRight
-                    d.BoxLines[2].From, d.BoxLines[2].To = topRight, bottomRight
-                    d.BoxLines[3].From, d.BoxLines[3].To = bottomRight, bottomLeft
-                    d.BoxLines[4].From, d.BoxLines[4].To = bottomLeft, topLeft
-                    for _, l in pairs(d.BoxLines) do l.Visible = true end
-
-                    d.Line.From = topCenter -- ✅ จุดบนจอด้านบน
-                    d.Line.To = Vector2.new(rootScreen.X, rootScreen.Y)
-                    d.Line.Visible = true
-
                     local distance = (Camera.CFrame.Position - hrp.Position).Magnitude
-                    d.Text.Position = Vector2.new(rootScreen.X, topLeft.Y - 20)
-                    d.Text.Text = string.format("%s [%.1f]", plr.DisplayName, distance)
-                    d.Text.Visible = true
+                    local height = math.abs(headScreen.Y - footScreen.Y)
+                    local width = height/2
+                    local topLeft = Vector2.new(rootScreen.X-width/2, rootScreen.Y-height/2)
+                    local topRight = Vector2.new(rootScreen.X+width/2, rootScreen.Y-height/2)
+                    local bottomLeft = Vector2.new(rootScreen.X-width/2, rootScreen.Y+height/2)
+                    local bottomRight = Vector2.new(rootScreen.X+width/2, rootScreen.Y+height/2)
+
+                    for i,line in ipairs(d.BoxLines) do
+                        if i==1 then line.From,line.To = topLeft,topRight
+                        elseif i==2 then line.From,line.To = topRight,bottomRight
+                        elseif i==3 then line.From,line.To = bottomRight,bottomLeft
+                        elseif i==4 then line.From,line.To = bottomLeft,topLeft
+                        end
+                        line.Color = p.Team and p.Team.TeamColor.Color or Color3.fromRGB(170,0,255)
+                        line.Visible=true
+                    end
+
+                    local healthPercent = humanoid.Health/humanoid.MaxHealth
+                    local healthBarHeight = height*healthPercent
+                    d.HealthBar.From = Vector2.new(topLeft.X-6,bottomLeft.Y)
+                    d.HealthBar.To = Vector2.new(topLeft.X-6,bottomLeft.Y-healthBarHeight)
+                    if healthPercent>0.6 then d.HealthBar.Color = Color3.fromRGB(0,255,0)
+                    elseif healthPercent>0.3 then d.HealthBar.Color=Color3.fromRGB(255,255,0)
+                    else d.HealthBar.Color=Color3.fromRGB(255,0,0)
+                    end
+                    d.HealthBar.Visible=true
+
+                    d.Line.From=topCenter
+                    d.Line.To=Vector2.new(rootScreen.X, rootScreen.Y)
+                    d.Line.Visible=true
+
+                    d.Text.Position=Vector2.new(rootScreen.X, topLeft.Y-20)
+                    d.Text.Text=string.format("%s [%.1fm]", p.DisplayName, distance)
+                    d.Text.Color = p.Team and p.Team.TeamColor.Color or Color3.new(1,1,1)
+                    d.Text.Visible=true
                 else
-                    d.Line.Visible = false
-                    for _, l in pairs(d.BoxLines) do l.Visible = false end
-                    d.Text.Visible = false
+                    d.Line.Visible=false
+                    for _,l in pairs(d.BoxLines) do l.Visible=false end
+                    d.Text.Visible=false
+                    d.HealthBar.Visible=false
                 end
             end
         end
     end
-
-    local function startESP()
-        if espEnabled then return end
-        espEnabled = true
-        for _, p in ipairs(Players:GetPlayers()) do if p ~= player then createDrawsFor(p) end end
-        RunServiceConnection = RunService.RenderStepped:Connect(updateESP)
-        Players.PlayerAdded:Connect(function(p) if espEnabled and p ~= player then createDrawsFor(p) end end)
-        Players.PlayerRemoving:Connect(function(p) removeDrawsFor(p) end)
-    end
-
-    local function stopESP()
-        if not espEnabled then return end
-        espEnabled = false
-        if RunServiceConnection then RunServiceConnection:Disconnect() RunServiceConnection = nil end
-        clearAllDraws()
-    end
-
-    PlayerTab:Toggle({
-        Title = "มองคนในเซิฟ",
-        Value = false,
-        Callback = function(v)
-            if v then
-                startESP()
-                Window:Notify({Title = "✅ ESP เปิดใช้งาน", Time = 3})
-            else
-                stopESP()
-                Window:Notify({Title = "🛑 ปิด ESP", Time = 3})
-            end
-        end
-    })
 end
+
+-- ===================== Start/Stop ESP =====================
+local function startESP()
+    if espEnabled then return end
+    espEnabled=true
+    for _,p in ipairs(Players:GetPlayers()) do if p~=plr then createDrawsFor(p) end end
+    RunServiceConnection = RunService.RenderStepped:Connect(updateESP)
+    Players.PlayerAdded:Connect(function(p) if espEnabled and p~=plr then createDrawsFor(p) end end)
+    Players.PlayerRemoving:Connect(removeDrawsFor)
+end
+
+local function stopESP()
+    if not espEnabled then return end
+    espEnabled=false
+    if RunServiceConnection then RunServiceConnection:Disconnect() RunServiceConnection=nil end
+    clearAllDraws()
+end
+
+-- ===================== Toggle สำหรับ UI x2zu =====================
+PlayerTab:Toggle({
+    Title = "มองคนในเซิฟ",
+    Value = false,
+    Callback = function(v)
+        if v then
+            startESP()
+        else
+            stopESP()
+        end
+    end
+})
      --// aimbot
    local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
