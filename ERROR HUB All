@@ -287,7 +287,7 @@ task.spawn(function()
 end)
 local PlayerTab = Window:Tab({Title = "Player", Icon = "user"})
    local Camera = workspace.CurrentCamera
-    local esp, espEnabled, RunServiceConnection = {}, false, nil
+local esp, espEnabled, RunServiceConnection = {}, false, nil
 
     repeat task.wait() until Camera and Camera.ViewportSize.X > 0
 
@@ -414,6 +414,7 @@ local PlayerTab = Window:Tab({Title = "Player", Icon = "user"})
         end
     })
 end
+
 --// aimbot
    local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
