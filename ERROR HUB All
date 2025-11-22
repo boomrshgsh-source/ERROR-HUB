@@ -287,6 +287,127 @@ task.spawn(function()
 end)
 local PlayerTab = Window:Tab({Title = "Player", Icon = "user"})
 
+   local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- ตั้งค่า ESP (เริ่มปิด, ให้ UI เปิด)
+local ESPSettings = {
+    Enabled = false,  -- เริ่มปิด
+    Box = true,
+    Line = true,
+    HP = true,
+    Name = true,
+}
+
+-- เก็บ Drawing
+local ESPCache = {}
+
+-- สร้าง ESP ให้ผู้เล่น
+local function createESP(player)
+    if player == LocalPlayer then return end
+    if ESPCache[player] then return end
+
+    local box = Drawing.new("Square")
+    box.Thickness = 1.5; box.Filled = false; box.Color = Color3.fromRGB(255,255,255)
+    
+    local line = Drawing.new("Line")
+    line.Thickness = 1.5; line.Color = Color3.fromRGB(255,255,255)
+    
+    local hpBar = Drawing.new("Square")
+    hpBar.Filled = true; hpBar.Thickness = 0; hpBar.Color = Color3.fromRGB(0,255,0)
+    
+    local name = Drawing.new("Text")
+    name.Text = player.Name; name.Size = 14; name.Center = true; name.Outline = true; name.Color = Color3.fromRGB(255,255,255)
+
+    ESPCache[player] = {box=box, line=line, hpBar=hpBar, name=name}
+end
+
+-- ลบ ESP เมื่อผู้เล่นออก
+Players.PlayerRemoving:Connect(function(player)
+    if ESPCache[player] then
+        for _,d in pairs(ESPCache[player]) do if d.Remove then d:Remove() end end
+        ESPCache[player] = nil
+    end
+end)
+
+-- สร้าง ESP ให้ผู้เล่นที่อยู่แล้ว
+for _,plr in ipairs(Players:GetPlayers()) do
+    createESP(plr)
+end
+Players.PlayerAdded:Connect(createESP)
+
+-- ฟังก์ชันเปิด/ปิด ESP
+function ToggleEsp(value)
+    ESPSettings.Enabled = value
+end
+
+-- อัปเดต ESP ทุกเฟรม
+RunService.RenderStepped:Connect(function()
+    if not ESPSettings.Enabled then
+        for _,v in pairs(ESPCache) do
+            for _,d in pairs(v) do d.Visible = false end
+        end
+        return
+    end
+
+    local camSize = Camera.ViewportSize
+    local camCenter = Vector2.new(camSize.X/2, camSize.Y/2)
+
+    for player,item in pairs(ESPCache) do
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") and char:FindFirstChildOfClass("Humanoid") and char:FindFirstChild("Head") then
+            local hrp = char.HumanoidRootPart
+            local head = char.Head
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            local headPos, visible = Camera:WorldToViewportPoint(head.Position + Vector3.new(0,0.5,0))
+            local footPos, footVisible = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0,2.5,0))
+
+            if not (visible or footVisible) then
+                item.box.Visible=false; item.line.Visible=false; item.hpBar.Visible=false; item.name.Visible=false
+            else
+                local height = math.abs(footPos.Y - headPos.Y)
+                local width = height/2
+                local boxPos = Vector2.new(headPos.X-width/2, headPos.Y)
+
+                -- Box
+                item.box.Visible = ESPSettings.Box
+                item.box.Size = Vector2.new(width,height)
+                item.box.Position = boxPos
+
+                -- Line
+                item.line.Visible = ESPSettings.Line
+                item.line.From = Vector2.new(camCenter.X,0)
+                item.line.To = Vector2.new(headPos.X,headPos.Y)
+
+                -- HP
+                item.hpBar.Visible = ESPSettings.HP
+                local hpRatio = hum.Health/hum.MaxHealth
+                item.hpBar.Size = Vector2.new(4,height)
+                item.hpBar.Position = Vector2.new(boxPos.X-6, boxPos.Y+(height-height*hpRatio))
+                item.hpBar.Color = Color3.fromRGB(0,255,0)
+
+                -- Name
+                item.name.Visible = ESPSettings.Name
+                item.name.Position = Vector2.new(headPos.X, boxPos.Y-14)
+            end
+        else
+            item.box.Visible=false; item.line.Visible=false; item.hpBar.Visible=false; item.name.Visible=false
+        end
+    end
+end)
+
+-- ตัวอย่างการเชื่อมกับ UI ของคุณ
+PlayerTab:Toggle({
+    Title = "มองคนในเซิฟ",
+    Value = false,
+    Callback = function(value)
+        ToggleEsp(value)
+    end
+})
+
+
 --// aimbot
    local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
