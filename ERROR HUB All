@@ -70,7 +70,7 @@ end
 local data = {
     username = "ERROR HUB",
     embeds = {{
-        title = "🌌 ERROR HUB ถูกใช้งาน",
+        title = "🌌ERROR HUB(Allmap) ถูกใช้งาน",
         color = color,
         thumbnail = { url = avatarUrl },
         image = { url = mapThumbnail },
