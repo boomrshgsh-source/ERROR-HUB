@@ -1,1 +1,237 @@
 
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local Players, RunService, Camera, LocalPlayer, Mouse, UIS =
+    game:GetService("Players"), game:GetService("RunService"),
+    workspace.CurrentCamera, game.Players.LocalPlayer, game.Players.LocalPlayer:GetMouse(),
+    game:GetService("UserInputService")
+
+local Window = WindUI:CreateWindow({
+    Title = "ERROR HUB",
+    Icon = "rbxassetid://87372447687978",
+    Author = "Block spin",
+    Folder = "ERROR_HUB",
+    Size = UDim2.fromOffset(400, 200),
+    Theme = "Dark",
+    Transparent = true,
+    Resizable = true,
+})
+
+local Tab = Window:Tab({Title = "MANU", Icon = "crosshair"})
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Silent Aim Settings
+local SilentAimEnabled = false
+local FOV = 350
+local PREDICTION_FACTOR = 0.165
+
+local GunNames = {
+    "P226","MP5","M24","Draco","Glock","Sawnoff","Uzi","G3","C9",
+    "Hunting Rifle","Anaconda","AK47","Remington","Double Barrel"
+}
+local GunLookup = {}
+for _, name in pairs(GunNames) do GunLookup[name] = true end
+
+-- FOV Circle
+local fovCircle = Drawing.new("Circle")
+fovCircle.Color = Color3.new(1,1,1)
+fovCircle.Thickness = 2
+fovCircle.NumSides = 100
+fovCircle.Radius = FOV
+fovCircle.Filled = false
+fovCircle.Visible = false
+fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+
+-- Tracer
+local tracerLine = Drawing.new("Line")
+tracerLine.Color = Color3.new(1,0,0)
+tracerLine.Thickness = 2
+tracerLine.Visible = false
+
+-- Find Closest Target
+local function GetClosestTarget()
+    local closest
+    local shortest = math.huge
+    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local screenPos, onScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
+            if onScreen then
+                local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                if dist < FOV and dist < shortest then
+                    shortest = dist
+                    closest = player
+                end
+            end
+        end
+    end
+    return closest
+end
+
+-- Prediction
+local function PredictPosition(headPart)
+    local root = headPart.Parent:FindFirstChild("HumanoidRootPart")
+    if not root then return headPart.Position end
+    local velocity = root.Velocity
+    local prediction = headPart.Position + (velocity * PREDICTION_FACTOR)
+    local seat = root:FindFirstChildWhichIsA("WeldConstraint") or root:FindFirstChildWhichIsA("Weld")
+    if seat and seat.Part0 then
+        prediction = headPart.Position + (seat.Part0.Velocity * PREDICTION_FACTOR * 1.2)
+    end
+    return prediction
+end
+
+-- Check Gun
+local function IsHoldingAllowedGun(args)
+    local ok, weapon = pcall(function() return args[3] end)
+    if not ok then return false end
+    if typeof(weapon) == "Instance" and GunLookup[weapon.Name] then
+        return true
+    end
+    for _, child in pairs(LocalPlayer.Character:GetChildren()) do
+        if (child:IsA("Tool") or child:IsA("Model")) and GunLookup[child.Name] then
+            return true
+        end
+    end
+    return false
+end
+
+-- Hook FireServer
+local send = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Send")
+local oldFire
+oldFire = hookfunction(send.FireServer, function(self, ...)
+    local args = {...}
+    if SilentAimEnabled and IsHoldingAllowedGun(args) then
+        local target = GetClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local head = target.Character.Head
+            local aimPos = PredictPosition(head)
+            args[4] = CFrame.new(1/0,1/0,1/0,0/0,0/0,0/0,0/0,0/0,0/0,0/0,0/0,0/0)
+            args[5] = {[1]={[1]={["Instance"]=head,["Position"]=aimPos}}}
+        end
+    end
+    return oldFire(self, unpack(args))
+end)
+
+-- Update FOV & Tracer
+RunService.RenderStepped:Connect(function()
+    if not fovCircle then return end
+    fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    fovCircle.Radius = math.clamp(FOV, 50, 1000)
+
+    if not SilentAimEnabled then
+        fovCircle.Visible = false
+        tracerLine.Visible = false
+        return
+    end
+
+    fovCircle.Visible = true
+    local target = GetClosestTarget()
+    if target and target.Character and target.Character:FindFirstChild("Head") then
+        local predictedPos = PredictPosition(target.Character.Head)
+        local screenPos, onScreen = Camera:WorldToViewportPoint(predictedPos)
+        if onScreen then
+            local ourHeadPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head") and LocalPlayer.Character.Head.Position
+            if ourHeadPos then
+                local screenStart, startOnScreen = Camera:WorldToViewportPoint(ourHeadPos)
+                if startOnScreen then
+                    tracerLine.From = Vector2.new(screenStart.X, screenStart.Y)
+                    tracerLine.To = Vector2.new(screenPos.X, screenPos.Y)
+                    tracerLine.Visible = true
+                else
+                    tracerLine.Visible = false
+                end
+            end
+        else
+            tracerLine.Visible = false
+        end
+    else
+        tracerLine.Visible = false
+    end
+end)
+
+Tab:Toggle({
+    Title = "Silent Aim",
+    Desc = "กระสุนตามหัว",
+    Value = false,
+    Callback = function(v)
+        SilentAimEnabled = v
+        fovCircle.Visible = v
+        tracerLine.Visible = v
+        print("[SilentAim]:", v and "Enabled" or "Disabled")
+    end
+})
+
+-- FOV Slider
+Tab:Slider({
+    Title = "ปรับวง",
+    Desc = "",
+    Step = 1,
+    Value = {
+        Min = 50,
+        Max = 1000,
+        Default = FOV,
+    },
+    Callback = function(value)
+        FOV = math.clamp(value, 50, 1000)
+        if fovCircle then
+            fovCircle.Radius = FOV
+        end
+        print("[SilentAim] FOV set to:", FOV)
+    end
+})
+   local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local DanceAndSpinEnabled = false
+local danceTrack = nil
+
+local function startDanceAndSpin()
+    local char = player.Character or player.CharacterAdded:Wait()
+    local humanoid = char:WaitForChild("Humanoid")
+
+    if not danceTrack then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://104767795538635"
+        danceTrack = humanoid:LoadAnimation(anim)
+        danceTrack.Looped = true
+    end
+
+    danceTrack:Play()
+    danceTrack:AdjustSpeed(2.5)
+end
+
+local function stopDanceAndSpin()
+    if danceTrack then
+        danceTrack:Stop()
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if DanceAndSpinEnabled then
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(10), 0)
+        end
+    end
+end)
+
+Tab:Toggle({
+    Title = "Anti Silent aim",
+    Desc = "กันล็อค",
+    Value = false,
+    Callback = function(v)
+        DanceAndSpinEnabled = v
+        if v then
+            startDanceAndSpin()
+        else
+            stopDanceAndSpin()
+        end
+    end
+})
