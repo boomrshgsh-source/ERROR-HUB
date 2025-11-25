@@ -235,3 +235,227 @@ Tab:Toggle({
         end
     end
 })
+
+local ESPTab = Window:Tab({Title = "ESP", Icon = "crosshair"})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ContentProvider = game:GetService("ContentProvider")
+local LocalPlayer = Players.LocalPlayer
+
+local ItemESP_Enabled = true
+local BillboardCache = {}
+local ItemESP_UpdateConnections = {}
+local WeaponDB = {}
+local PreloadedImages = {}
+
+local RARITY_COLORS = {
+    ["Common"] = Color3.fromRGB(255, 255, 255),
+    ["Uncommon"] = Color3.fromRGB(99, 255, 52),
+    ["Rare"] = Color3.fromRGB(51, 170, 255),
+    ["Epic"] = Color3.fromRGB(237, 44, 255),
+    ["Legendary"] = Color3.fromRGB(255, 150, 0),
+    ["Omega"] = Color3.fromRGB(255, 20, 51),
+}
+
+local function generateUniqueKey(tool)
+    if not tool or not tool:IsA("Tool") then return "TOOL_"..tool.Name end
+    local itemId = tool:GetAttribute("ItemId") or tool:GetAttribute("Id")
+    if itemId then return "ITEMID_" .. tostring(itemId) end
+    local partsData = {}
+    for _, part in ipairs(tool:GetDescendants()) do
+        if part:IsA("SpecialMesh") and part.MeshId and part.MeshId ~= "" then
+            table.insert(partsData, "MESH_" .. part.MeshId .. "|TEX_" .. (part.TextureId or "NONE"))
+        elseif part:IsA("MeshPart") and part.MeshId ~= "" then
+            table.insert(partsData, "MESH_" .. part.MeshId .. "|TEX_" .. (part.TextureID or "NONE"))
+        elseif part:IsA("Decal") and part.Texture ~= "" then
+            table.insert(partsData, "DECAL_" .. part.Texture)
+        elseif part:IsA("Part") then
+            table.insert(partsData, "PART_" .. part.Name)
+        end
+    end
+    if #partsData > 0 then
+        table.sort(partsData)
+        return "MESHKEY_" .. table.concat(partsData, ";")
+    end
+    return "NAME_" .. tool.Name
+end
+
+local function registerItems(folder)
+    for _, tool in ipairs(folder:GetDescendants()) do
+        if not tool:IsA("Tool") then continue end
+        local key = generateUniqueKey(tool)
+        if not key then continue end
+        local displayName = tool:GetAttribute("DisplayName") or tool.Name
+        local imageId = tool:GetAttribute("ImageId") or "rbxassetid://7072725737"
+        local rarity = tool:GetAttribute("RarityName") or tool:GetAttribute("Rarity") or "Common"
+
+        WeaponDB[key] = {
+            Name = displayName,
+            Rarity = rarity,
+            ImageId = imageId,
+            ToolName = tool.Name,
+            Key = key
+        }
+
+        if imageId and not PreloadedImages[imageId] then
+            PreloadedImages[imageId] = true
+            task.spawn(function()
+                local img = Instance.new("ImageLabel")
+                img.Image = imageId
+                img.Size = UDim2.new(0,0,0,0)
+                img.Parent = workspace
+                pcall(function()
+                    ContentProvider:PreloadAsync({img})
+                end)
+                img:Destroy()
+            end)
+        end
+    end
+end
+
+pcall(function()
+    local itemsFolder = ReplicatedStorage:WaitForChild("Items", 5)
+    if itemsFolder then registerItems(itemsFolder) end
+    for _, obj in ipairs(ReplicatedStorage:GetChildren()) do
+        if obj:IsA("Folder") and (obj.Name:find("Weapon") or obj.Name:find("Item") or obj.Name:find("Tool")) then
+            registerItems(obj)
+        end
+    end
+    registerItems(game:GetService("StarterPack"))
+end)
+
+local function getWeaponInfo(tool)
+    if not tool or not tool:IsA("Tool") then return nil end
+    return WeaponDB[ generateUniqueKey(tool) ]
+end
+
+local function createBillboardForPlayer(player)
+    if player == LocalPlayer or BillboardCache[player] then return end
+    local billboard, container
+    local connections = {}
+
+    local function updateESP()
+        if not ItemESP_Enabled or not billboard or not billboard.Parent then return end
+        local tools = {}
+        local function scan(folder)
+            if not folder then return end
+            for _, tool in ipairs(folder:GetChildren()) do
+                if tool:IsA("Tool") then
+                    local info = getWeaponInfo(tool)
+                    if info then table.insert(tools, info) end
+                end
+            end
+        end
+        local char = player.Character
+        if char then scan(char) end
+        if player.Backpack then scan(player.Backpack) end
+
+        for _, child in ipairs(container:GetChildren()) do
+            if child:IsA("ImageLabel") then child:Destroy() end
+        end
+
+        local layout = container:FindFirstChildOfClass("UIGridLayout")
+        if not layout then
+            layout = Instance.new("UIGridLayout")
+            layout.CellSize = UDim2.new(0, 35, 0, 35)
+            layout.CellPadding = UDim2.new(0, 6, 0, 0)
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            layout.VerticalAlignment = Enum.VerticalAlignment.Center
+            layout.Parent = container
+        end
+
+        for i, info in ipairs(tools) do
+            local img = Instance.new("ImageLabel")
+            img.Parent = container
+            img.Size = UDim2.new(0, 35, 0, 35)
+            img.BackgroundTransparency = 1
+            img.Image = info.ImageId
+            img.ScaleType = Enum.ScaleType.Fit
+            img.LayoutOrder = i
+            local color = RARITY_COLORS[info.Rarity] or Color3.new(1,1,1)
+            img.ImageColor3 = color:Lerp(Color3.new(1,1,1), 0.35)
+        end
+    end
+
+    local function setupBillboard()
+        local char = player.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        if BillboardCache[player] then BillboardCache[player]:Destroy() end
+
+        billboard = Instance.new("BillboardGui")
+        billboard.Name = "ItemESP"
+        billboard.Adornee = hrp
+        billboard.Size = UDim2.new(0, 280, 0, 40)
+        billboard.StudsOffsetWorldSpace = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = hrp
+
+        container = Instance.new("Frame", billboard)
+        container.BackgroundTransparency = 1
+        container.Size = UDim2.new(1, 0, 1, 0)
+
+        BillboardCache[player] = billboard
+        updateESP()
+
+        local backpack = player:FindFirstChild("Backpack")
+        if backpack then
+            table.insert(connections, backpack.ChildAdded:Connect(updateESP))
+            table.insert(connections, backpack.ChildRemoved:Connect(updateESP))
+        end
+
+        table.insert(connections, char.ChildAdded:Connect(function(c)
+            if c:IsA("Tool") then updateESP() end
+        end))
+        table.insert(connections, char.ChildRemoved:Connect(function(c)
+            if c:IsA("Tool") then updateESP() end
+        end))
+    end
+
+    if player.Character then
+        task.spawn(setupBillboard)
+    end
+
+    table.insert(connections, player.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        setupBillboard()
+    end))
+
+    ItemESP_UpdateConnections[player] = connections
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer then createBillboardForPlayer(p) end
+end
+
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LocalPlayer then createBillboardForPlayer(p) end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if BillboardCache[p] then BillboardCache[p]:Destroy() end
+    if ItemESP_UpdateConnections[p] then
+        for _, c in ipairs(ItemESP_UpdateConnections[p]) do
+            if c.Connected then c:Disconnect() end
+        end
+    end
+    BillboardCache[p] = nil
+    ItemESP_UpdateConnections[p] = nil
+end)
+
+ESPTab:Toggle({
+    Title = "Item ESP",
+    Desc = "ดูของ",
+    Value = ItemESP_Enabled,
+    Callback = function(v)
+        ItemESP_Enabled = v
+        for _, billboard in pairs(BillboardCache) do
+            if billboard and billboard.Parent then
+                billboard.Enabled = v
+            end
+        end
+    end
+})
