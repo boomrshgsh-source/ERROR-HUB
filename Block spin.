@@ -668,6 +668,48 @@ ESPTab:Toggle({
     end
 })
 
+
+     local GraphicsTab = Window:Tab({Title = "Graphics", Icon = "picture"})
+
+GraphicsTab:Button({
+    Text = "Low Graphics Mode",
+    Callback = function()
+        local Lighting = game:GetService("Lighting")
+        local Terrain = workspace.Terrain
+
+        Lighting.GlobalShadows = false
+        Lighting.EnvironmentDiffuseScale = 0
+        Lighting.EnvironmentSpecularScale = 0
+
+        for _, v in pairs(Lighting:GetChildren()) do
+            if v:IsA("PostEffect") then
+                v.Enabled = false
+            end
+        end
+
+        Terrain.WaterWaveSize = 0
+        Terrain.WaterWaveSpeed = 0
+        Terrain.WaterReflectance = 0
+        Terrain.WaterTransparency = 1
+
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Texture") or v:IsA("Decal") then
+                v:Destroy()
+            end
+        end
+
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CastShadow = false
+            end
+        end
+
+        local cam = workspace.CurrentCamera
+        cam.FieldOfView = 50
+    end
+})
+
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
