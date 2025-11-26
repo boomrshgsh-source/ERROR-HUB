@@ -184,7 +184,8 @@ Tab:Slider({
         print("[SilentAim] FOV set to:", FOV)
     end
 })
-   local Players = game:GetService("Players")
+
+  local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 
@@ -192,10 +193,11 @@ local DanceAndSpinEnabled = false
 local danceTrack = nil
 
 local function startDanceAndSpin()
-    local char = player.Character or player.CharacterAdded:Wait()
+    local char = player.Character
+    if not char then return end
     local humanoid = char:WaitForChild("Humanoid")
 
-    if not danceTrack then
+    if not danceTrack or danceTrack.Parent ~= humanoid then
         local anim = Instance.new("Animation")
         anim.AnimationId = "rbxassetid://104767795538635"
         danceTrack = humanoid:LoadAnimation(anim)
@@ -212,6 +214,7 @@ local function stopDanceAndSpin()
     end
 end
 
+-- หมุนทุก Frame
 RunService.RenderStepped:Connect(function()
     if DanceAndSpinEnabled then
         local char = player.Character
@@ -221,6 +224,34 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
+
+-- ฟัง event respawn
+player.CharacterAdded:Connect(function(char)
+    danceTrack = nil -- รีเซ็ต animation ใหม่
+    local humanoid = char:WaitForChild("Humanoid")
+
+    -- ถ้าตาย ให้ปิด DanceAndSpin
+    humanoid.Died:Connect(function()
+        DanceAndSpinEnabled = false
+        stopDanceAndSpin()
+    end)
+
+    -- เริ่มเต้นและหมุนถ้าเปิดไว้
+    if DanceAndSpinEnabled then
+        startDanceAndSpin()
+    end
+end)
+
+-- เริ่มทันทีถ้ามีตัวละครอยู่แล้ว
+if player.Character then
+    local humanoid = player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            DanceAndSpinEnabled = false
+            stopDanceAndSpin()
+        end)
+    end
+end
 
 Tab:Toggle({
     Title = "Anti Silent aim",
@@ -235,6 +266,7 @@ Tab:Toggle({
         end
     end
 })
+   
 
 local ESPTab = Window:Tab({Title = "ESP", Icon = "crosshair"})
 
