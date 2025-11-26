@@ -244,7 +244,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ContentProvider = game:GetService("ContentProvider")
 local LocalPlayer = Players.LocalPlayer
 
-local ItemESP_Enabled = true
+local ItemESP_Enabled = false
 local BillboardCache = {}
 local ItemESP_UpdateConnections = {}
 local WeaponDB = {}
@@ -473,8 +473,8 @@ local ServerTab = Window:Tab({Title = "Server", Icon = "globe"})
 local jobInput = ""
 ServerTab:Input({
     Title = "JobId",
-    Desc = "ใส่ JobId ที่ต้องการย้ายไป",
-    Placeholder = "เช่น 707d6f1b-xxxx-xxxx",
+    Desc = "ใส่ JobId ที่จะย้ายไป",
+    Placeholder = "",
     Callback = function(text)
         jobInput = text
     end
@@ -482,12 +482,11 @@ ServerTab:Input({
 
 ServerTab:Button({
     Title = "Join Job",
-    Desc = "ย้ายไปเซิร์ฟที่กรอก JobId",
     Callback = function()
         if jobInput ~= "" then
             TeleportService:TeleportToPlaceInstance(placeId, jobInput, player)
         else
-            warn("กรุณาใส่ JobId ให้ถูกต้อง")
+            warn("ใส่ JobId ให้ถูก")
         end
     end
 })
@@ -495,7 +494,7 @@ ServerTab:Button({
 -- 2️⃣ Copy JobId
 ServerTab:Button({
     Title = "Copy JobId",
-    Desc = "ก็อป JobId ปัจจุบันไปคลิปบอร์ด",
+    Desc = "คัดลอกจ็อปไอดี",
     Callback = function()
         setclipboard(game.JobId)
         print("Copied JobId:", game.JobId)
@@ -505,7 +504,7 @@ ServerTab:Button({
 -- 3️⃣ Rejoin
 ServerTab:Button({
     Title = "Rejoin",
-    Desc = "เข้าซ้ำเซิร์ฟเดิม",
+    Desc = "ออกเข้าใหม่",
     Callback = function()
         TeleportService:TeleportToPlaceInstance(placeId, game.JobId, player)
     end
@@ -514,7 +513,7 @@ ServerTab:Button({
 -- 4️⃣ Server Hop (สุ่มเซิร์ฟ)
 ServerTab:Button({
     Title = "Server Hop",
-    Desc = "ย้ายไปเซิร์ฟใหม่แบบสุ่ม",
+    Desc = "ย้ายไปเซิร์ฟใหม่",
     Callback = function()
         local success, servers = pcall(function()
             local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
@@ -538,7 +537,7 @@ ServerTab:Button({
 -- 5️⃣ Small Server (ผู้เล่นน้อยสุด)
 ServerTab:Button({
     Title = "Small Server",
-    Desc = "ย้ายไปเซิร์ฟที่มีผู้เล่นน้อยสุด",
+    Desc = "ย้ายไปเซิร์ฟคนน้อย",
     Callback = function()
         local success, servers = pcall(function()
             local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
