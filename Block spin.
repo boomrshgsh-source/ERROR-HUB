@@ -491,6 +491,182 @@ ESPTab:Toggle({
         end
     end
 })
+   local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+local ESPSettings = {
+    Enabled = true,
+    Box = true,
+    HP = true,
+    Name = true,
+    Skeleton = true,
+}
+
+local ESPCache = {}
+
+local function createESP(player)
+    if player == LocalPlayer then return end
+    if ESPCache[player] then return end
+
+    local box = Drawing.new("Square")
+    box.Thickness = 1.5
+    box.Filled = false
+    box.Color = Color3.fromRGB(255,255,255)
+
+    local hpBar = Drawing.new("Square")
+    hpBar.Filled = true
+    hpBar.Color = Color3.fromRGB(0,255,0)
+
+    local name = Drawing.new("Text")
+    name.Size = 14
+    name.Center = true
+    name.Outline = true
+    name.Color = Color3.fromRGB(255,255,255)
+    name.Text = player.Name
+
+    local skeleton = {}
+    local function makeLine()
+        local l = Drawing.new("Line")
+        l.Color = Color3.fromRGB(0,255,0)
+        l.Thickness = 2
+        return l
+    end
+    for i = 1, 6 do
+        table.insert(skeleton, makeLine())
+    end
+
+    ESPCache[player] = {
+        box = box,
+        hpBar = hpBar,
+        name = name,
+        skeleton = skeleton
+    }
+end
+
+Players.PlayerRemoving:Connect(function(player)
+    if not ESPCache[player] then return end
+    for _, obj in pairs(ESPCache[player]) do
+        if type(obj) == "table" then
+            for _, l in ipairs(obj) do if l.Remove then l:Remove() end end
+        elseif obj.Remove then
+            obj:Remove()
+        end
+    end
+    ESPCache[player] = nil
+end)
+
+for _, plr in ipairs(Players:GetPlayers()) do
+    createESP(plr)
+end
+Players.PlayerAdded:Connect(createESP)
+
+RunService.RenderStepped:Connect(function()
+    if not ESPSettings.Enabled then
+        for _, v in pairs(ESPCache) do
+            for _, d in pairs(v) do
+                if type(d) == "table" then
+                    for _, l in pairs(d) do l.Visible = false end
+                else
+                    d.Visible = false
+                end
+            end
+        end
+        return
+    end
+
+    for player, item in pairs(ESPCache) do
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local head = char and char:FindFirstChild("Head")
+        local torso = char and (char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso"))
+
+        if not (char and hrp and hum and head and torso) then
+            for _, d in pairs(item) do
+                if type(d) == "table" then
+                    for _, l in pairs(d) do l.Visible = false end
+                else
+                    d.Visible = false
+                end
+            end
+            continue
+        end
+
+        local size = char:GetExtentsSize()
+        local top = hrp.Position + Vector3.new(0, size.Y/2, 0)
+        local bottom = hrp.Position - Vector3.new(0, size.Y/2, 0)
+
+        local top2d, topVisible = Camera:WorldToViewportPoint(top)
+        local bot2d, botVisible = Camera:WorldToViewportPoint(bottom)
+
+        if not topVisible and not botVisible then
+            item.box.Visible = false
+            item.hpBar.Visible = false
+            item.name.Visible = false
+            for _, l in pairs(item.skeleton) do l.Visible = false end
+            continue
+        end
+
+        local height2d = math.abs(top2d.Y - bot2d.Y)
+        local width2d = height2d / 2
+
+        item.box.Size = Vector2.new(width2d, height2d)
+        item.box.Position = Vector2.new(top2d.X - width2d/2, top2d.Y)
+        item.box.Visible = ESPSettings.Box
+
+        item.hpBar.Size = Vector2.new(5, height2d * (hum.Health / hum.MaxHealth))
+        item.hpBar.Position = Vector2.new(item.box.Position.X - 6, item.box.Position.Y + (height2d - item.hpBar.Size.Y))
+        item.hpBar.Visible = ESPSettings.HP
+
+        item.name.Position = Vector2.new(top2d.X, top2d.Y - 15)
+        item.name.Visible = ESPSettings.Name
+
+        if ESPSettings.Skeleton then
+            local larm = char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm")
+            local rarm = char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm")
+            local lleg = char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg")
+            local rleg = char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg")
+
+            local bones = {
+                {head, torso},
+                {torso, larm},
+                {torso, rarm},
+                {torso, lleg},
+                {torso, rleg},
+                {larm, rarm}
+            }
+
+            for i, pair in ipairs(bones) do
+                local a, b = pair[1], pair[2]
+                local line = item.skeleton[i]
+                if a and b then
+                    local a2d, aVis = Camera:WorldToViewportPoint(a.Position)
+                    local b2d, bVis = Camera:WorldToViewportPoint(b.Position)
+                    if aVis and bVis then
+                        line.From = Vector2.new(a2d.X, a2d.Y)
+                        line.To = Vector2.new(b2d.X, b2d.Y)
+                        line.Visible = true
+                    else
+                        line.Visible = false
+                    end
+                else
+                    line.Visible = false
+                end
+            end
+        end
+    end
+end)
+
+local ESPTab = Window:Tab({Title = "ESP", Icon = "crosshair"})
+ESPTab:Toggle({
+    Title = "ESP",
+    Default = มองคนในเซิฟ,
+    Callback = function(state)
+        ESPSettings.Enabled = state
+    end
+})
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
