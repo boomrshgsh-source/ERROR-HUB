@@ -491,11 +491,12 @@ ESPTab:Toggle({
         end
     end
 })
-   local Players = game:GetService("Players")
+ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
+-- ตั้งค่า ESP
 local ESPSettings = {
     Enabled = true,
     Box = true,
@@ -659,19 +660,18 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
+-- Wind UI ESP Tab
 local ESPTab = Window:Tab({Title = "ESP", Icon = "crosshair"})
+
 ESPTab:Toggle({
     Title = "ESP",
-    Default = มองคนในเซิฟ,
+    Desc = "มองคนในเซิฟ", -- คำอธิบายใต้ชื่อ Toggle
+    Default = true,          -- เปิด ESP ตั้งแต่แรก
     Callback = function(state)
         ESPSettings.Enabled = state
     end
 })
-
-
      local GraphicsTab = Window:Tab({Title = "Graphics", Icon = "picture"})
-
-GraphicsTab:Button({
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
