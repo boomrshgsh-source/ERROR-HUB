@@ -660,13 +660,10 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- Wind UI ESP Tab
-local ESPTab = Window:Tab({Title = "ESP", Icon = "crosshair"})
-
 ESPTab:Toggle({
     Title = "ESP",
     Desc = "มองคนในเซิฟ", -- คำอธิบายใต้ชื่อ Toggle
-    Default = true,          -- เปิด ESP ตั้งแต่แรก
+    Default = false,          -- เปิด ESP ตั้งแต่แรก
     Callback = function(state)
         ESPSettings.Enabled = state
     end
