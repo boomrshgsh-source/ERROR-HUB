@@ -662,13 +662,12 @@ end)
 
 ESPTab:Toggle({
     Title = "ESP",
-    Desc = "มองคนในเซิฟ", -- คำอธิบายใต้ชื่อ Toggle
-    Default = false,          -- เปิด ESP ตั้งแต่แรก
+    Desc = "มองคนในเซิฟ",
+    Default = false,
     Callback = function(state)
         ESPSettings.Enabled = state
     end
 })
-     local GraphicsTab = Window:Tab({Title = "Graphics", Icon = "picture"})
 
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
