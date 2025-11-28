@@ -2253,14 +2253,14 @@ local AutoSprintToggle =
                         if WindUI then
                             WindUI:Notify(
                                 {
-                                    Title = "โ… INF STAMINA",
+                                    Title = "INF STAMINA",
                                     Description = "Auto Sprint เนเธฅเธฐ Infinite Stamina เธ—เธณเธเธฒเธเนเธฅเนเธง",
                                     Duration = 3
                                 }
                             )
                         end
                     else
-                        warn("โ เนเธกเนเธเธ SprintBar!")
+                        warn("SprintBar!")
                         AutoSprintEnabled = false
                         AutoSprintToggle:Set(false)
                     end
