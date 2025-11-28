@@ -135,10 +135,10 @@ if WindUI then
     Window =
         WindUI:CreateWindow(
         {
-            Title = "เธซเธตเธซเธกเธฒ๐”ซ | 0.1z | free  ",
+            Title = "ERROR HUB",
             Icon = "cloud-lightning",
-            Author = "creator GODHUB",
-            Folder = "yomo Now",
+            Author = "Block spin",
+            Folder = "ERROR_HUBOP",
             Size = UDim2.fromOffset(400, 200),
             Theme = "Dark",
             Transparent = true,
