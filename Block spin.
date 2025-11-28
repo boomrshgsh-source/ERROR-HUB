@@ -2156,7 +2156,7 @@ local LegSinkToggle =
     Tab_Character:Toggle(
     {
         Title = "Leg Sink",
-        Desc = "เธเธฃเธฑเธเนเธซเนเธเธฒเธเธกเธฅเธ (เธเธฃเธฑเธ HipHeight เธเธญเธ Humanoid)",
+        Desc = "",
         Default = false,
         Callback = function(state)
             LegSinkEnabled = state
