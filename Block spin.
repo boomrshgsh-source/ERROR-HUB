@@ -767,6 +767,391 @@ ESPTab:Toggle({
     end
 })
 
+-- == Global Variables ==
+-- Silent Aim
+local SilentAimEnabled = false
+local SilentAimAttachEnabled = false
+local GoodGunEnabled = false
+local FOVRadius = 120
+local CurrentTarget = nil
+local SilentFOVCircle = nil
+local Tracer = Drawing.new("Line")
+Tracer.Thickness = 1
+Tracer.Color = Color3.fromRGB(255, 50, 50)
+Tracer.Transparency = 1
+Tracer.Visible = false
+
+-- == Utility Functions ==
+local function getPing()
+    local stats = LocalPlayer:FindFirstChild("PlayerGui") and LocalPlayer.PlayerGui:FindFirstChild("NetworkStats")
+    if stats then
+        local pingText = stats:FindFirstChild("PingLabel")
+        if pingText and typeof(pingText.Text) == "string" then
+            local ping = tonumber(pingText.Text:match("%d+"))
+            return ping and ping / 1000 or 0.2
+        end
+    end
+    return 0.2
+end
+
+local function isPlayerExcluded(playerName)
+    for _, excludedName in ipairs(excludedPlayerNames) do
+        if excludedName ~= "" and string.find(string.lower(playerName), string.lower(excludedName)) then
+            return true
+        end
+    end
+    return false
+end
+
+local function getClosestTarget()
+    local closest = nil
+    local shortestDistance = FOVRadius -- ใช้ FOV เป็นขอบเขต
+    local center = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local head = player.Character:FindFirstChild("Head")
+            local humanoid = player.Character:FindFirstChild("Humanoid")
+            local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+            if head and humanoid and humanoid.Health > 0 and hrp then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+                if onScreen then
+                    local screenVector = Vector2.new(screenPos.X, screenPos.Y)
+                    local distanceFromCenter = (screenVector - center).Magnitude
+                    -- อยู่ใน FOV และไม่ถูกยกเว้น
+                    if distanceFromCenter <= FOVRadius and not isPlayerExcluded(player.Name) then
+                        if distanceFromCenter < shortestDistance then
+                            shortestDistance = distanceFromCenter
+                            closest = player
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function predictPosition(head, hrp)
+    local ping = getPing()
+    local velocity = hrp and hrp.Velocity or Vector3.zero
+    return head.Position + (velocity * ping * 1.15)
+end
+
+local function isBehindWall(startPos, endPos)
+    if not startPos or not endPos then
+        return false
+    end
+    local ray = Ray.new(startPos, endPos - startPos)
+    local ignoreList = {}
+    if LocalPlayer.Character then
+        table.insert(ignoreList, LocalPlayer.Character)
+    end
+    if CurrentTarget and CurrentTarget.Character then
+        table.insert(ignoreList, CurrentTarget.Character)
+    end
+    local hit = Workspace:FindPartOnRayWithIgnoreList(ray, ignoreList)
+    return hit ~= nil
+end
+
+-- == Silent FOV Circle Setup ==
+if not isMobile then
+    SilentFOVCircle = Drawing.new("Circle")
+    SilentFOVCircle.Color = Color3.fromRGB(255, 255, 255)
+    SilentFOVCircle.Thickness = 2 -- Increased thickness for better visibility
+    SilentFOVCircle.NumSides = 64
+    SilentFOVCircle.Filled = false
+    SilentFOVCircle.Transparency = 0.8 -- Slightly less transparent for better visibility
+    SilentFOVCircle.Radius = FOVRadius
+    SilentFOVCircle.Visible = false
+else
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "MobileFOV"
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    SilentFOVCircle = Instance.new("Frame")
+    SilentFOVCircle.Size = UDim2.fromOffset(FOVRadius * 2, FOVRadius * 2)
+    SilentFOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+    SilentFOVCircle.Position = UDim2.fromScale(0.5, 0.5)
+    SilentFOVCircle.BackgroundTransparency = 1
+    local circleUI = Instance.new("UICorner")
+    circleUI.CornerRadius = UDim.new(1, 0)
+    circleUI.Parent = SilentFOVCircle
+    local border = Instance.new("UIStroke")
+    border.Color = Color3.fromRGB(255, 255, 255)
+    border.Thickness = 2 -- Increased thickness for better visibility
+    border.Transparency = 0.2 -- Slightly less transparent for better visibility
+    border.Parent = SilentFOVCircle
+    SilentFOVCircle.Parent = ScreenGui
+end
+
+-- == ENHANCED SMART SILENT AIM SYSTEM ==
+local oldFire
+if Remote and Remote.FireServer then
+    local ok, res = pcall(function()
+        oldFire = hookfunction(Remote.FireServer, function(self, ...)
+            if self ~= Remote then return oldFire(self, ...) end
+            local args = {...}
+            
+            if (SilentAimEnabled or GoodGunEnabled) and args[2] == "shoot_gun" and CurrentTarget then
+                local head = CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Head")
+                local hrp = CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+                local humanoid = CurrentTarget.Character:FindFirstChild("Humanoid")
+                
+                if head and humanoid and hrp and humanoid.Health > 0 then
+                    local aimPos = predictPosition(head, hrp)
+                    local myHead = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head")
+                    
+                    if myHead then
+                        -- ตรวจสอบว่าเป้าหมายอยู่หลังกำแพงหรือไม่
+                        local isTargetBehindWall = isBehindWall(myHead.Position, aimPos)
+                        
+                        -- ระบบฉลาด: ถ้าอยู่หลังกำแพงและเปิด GoodGun ให้ยิงทะลุ, ถ้าอยู่ด้านหน้าก็ยิงปกติ
+                        if GoodGunEnabled and isTargetBehindWall then
+                            -- โหมดยิงทะลุกำแพง
+                            args[4] = CFrame.new(math.huge, math.huge, math.huge)
+                            args[5] = {
+                                [1] = {
+                                    [1] = {
+                                        ["Instance"] = head,
+                                        ["Normal"] = Vector3.new(0, 1, 0),
+                                        ["Position"] = aimPos
+                                    }
+                                }
+                            }
+                        else
+                            -- โหมดยิงปกติ (ไม่ทะลุกำแพง)
+                            args[4] = CFrame.new(LocalPlayer.Character.Head.Position, aimPos)
+                            args[5] = {
+                                [1] = {
+                                    [1] = {
+                                        ["Instance"] = head,
+                                        ["Normal"] = Vector3.new(0, 1, 0),
+                                        ["Position"] = aimPos
+                                    }
+                                }
+                            }
+                        end
+
+                        -- เอฟเฟกต์กระสุน
+                        local myPos = LocalPlayer.Character.Head.Position
+                        local success, beam = pcall(function()
+                            local part = Instance.new("Part")
+                            part.Anchored = true
+                            part.CanCollide = false
+                            part.Size = Vector3.new(0.15, 0.15, (aimPos - myPos).Magnitude)
+                            part.CFrame = CFrame.new(myPos, aimPos) * CFrame.new(0, 0, -part.Size.Z / 2)
+                            part.Material = Enum.Material.Neon
+                            part.Transparency = 0.25
+                            part.Color = (GoodGunEnabled and isTargetBehindWall) and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 50, 50)
+                            part.Parent = Workspace
+                            Debris:AddItem(part, 4)
+                            return part
+                        end)
+
+                        -- เอฟเฟกต์เมื่อยิงโดน
+                        spawn(function()
+                            wait(0.1)
+                            if humanoid and humanoid.Health < humanoid.MaxHealth then
+                                -- เอฟเฟกต์ยิงโดน
+                                for _, part in ipairs(CurrentTarget.Character:GetDescendants()) do
+                                    if part:IsA("BasePart") then
+                                        local box = Instance.new("Part")
+                                        box.Size = part.Size + Vector3.new(0.05, 0.05, 0.05)
+                                        box.CFrame = part.CFrame
+                                        box.Anchored = true
+                                        box.CanCollide = false
+                                        box.Material = Enum.Material.Neon
+                                        box.Color = (GoodGunEnabled and isTargetBehindWall) and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(128, 0, 128)
+                                        box.Transparency = 0.5
+                                        box.Parent = Workspace
+                                        local tweenInfo = TweenInfo.new(1.5, Enum.EasingStyle.Linear)
+                                        TweenService:Create(box, tweenInfo, {Transparency = 1}):Play()
+                                        Debris:AddItem(box, 2)
+                                    end
+                                end
+                            end
+                        end)
+                    end
+                end
+            end
+
+            return oldFire(self, unpack(args))
+        end)
+    end)
+
+    if not ok then
+        warn("Warning: failed to hook Remote.FireServer")
+    end
+end
+
+-- Main Render Loop
+RunService.RenderStepped:Connect(
+    function()
+        pcall(
+            function()
+                if SilentAimAttachEnabled then
+                    CurrentTarget = getClosestTarget()
+                end
+                if SilentFOVCircle then
+                    SilentFOVCircle.Visible = SilentAimEnabled or SilentAimAttachEnabled or GoodGunEnabled
+                    if isMobile then
+                        SilentFOVCircle.Position = UDim2.fromScale(0.5, 0.5)
+                        SilentFOVCircle.Size = UDim2.fromOffset(FOVRadius * 2, FOVRadius * 2)
+                    else
+                        SilentFOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+                        SilentFOVCircle.Radius = FOVRadius
+                    end
+                end
+                CurrentTarget = (SilentAimEnabled or SilentAimAttachEnabled or GoodGunEnabled) and getClosestTarget() or nil
+                if CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Head") then
+                    local targetHead = CurrentTarget.Character.Head
+                    local humanoid = CurrentTarget.Character:FindFirstChild("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        local centerScreenPos = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) -- Center of FOV circle
+                        local targetScreenPos, targetOnScreen = Camera:WorldToViewportPoint(targetHead.Position)
+                        if targetOnScreen then
+                            Tracer.Visible = true
+                            Tracer.From = centerScreenPos -- Start from center of FOV circle
+                            Tracer.To = Vector2.new(targetScreenPos.X, targetScreenPos.Y)
+                            Tracer.Color = GoodGunEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 50, 50)
+                        else
+                            Tracer.Visible = false
+                        end
+                    else
+                        Tracer.Visible = false
+                    end
+                else
+                    Tracer.Visible = false
+                end
+            end
+        )
+    end
+)
+
+-- == UI Tabs ==
+local Tab = Window:Tab({Title = "COMBAT:", Icon = "crosshair"})
+
+-- Silent Aim Toggle
+local SilentToggle = Tab:Toggle(
+    {
+        Title = "Silent Aim",
+        Default = false,
+        Callback = function(state)
+            SilentAimEnabled = state
+            CurrentTarget = nil
+            if state then
+                GoodGunEnabled = false
+                SilentAimAttachEnabled = false
+                if GoodGunToggle then
+                    GoodGunToggle:Set(false)
+                end
+                if AttachToggle then
+                    AttachToggle:Set(false)
+                end
+            end
+        end
+    }
+)
+myConfig:Register("SilentAim", SilentToggle)
+
+-- Good Gun Toggle (Silent Aim ยิงทะลุ)
+local GoodGunToggle =
+    Tab:Toggle(
+    {
+        Title = "ยิงทะลุ",
+        Default = false,
+        Callback = function(state)
+            GoodGunEnabled = state
+            CurrentTarget = nil
+            if state then
+                SilentAimEnabled = false
+                SilentAimAttachEnabled = false
+                if SilentToggle then
+                    SilentToggle:Set(false)
+                end
+                if AttachToggle then
+                    AttachToggle:Set(false)
+                end
+            end
+        end
+    }
+)
+myConfig:Register("GoodGun", GoodGunToggle)
+
+-- Silent Aim Attach Toggle
+local AttachToggle = Tab:Toggle(
+    {
+        Title = "Silent Aim Attach",
+        Default = false,
+        Callback = function(state)
+            SilentAimAttachEnabled = state
+            CurrentTarget = nil
+            if state then
+                SilentAimEnabled = false
+                GoodGunEnabled = false
+                if SilentToggle then
+                    SilentToggle:Set(false)
+                end
+                if GoodGunToggle then
+                    GoodGunToggle:Set(false)
+                end
+            end
+        end
+    }
+)
+myConfig:Register("SilentAimAttach", AttachToggle)
+
+-- FOV Slider
+local FOVSlider =
+    Tab:Slider(
+    {
+        Title = "FOV: ",
+        Step = 1,
+        Value = {
+            Min = 20,
+            Max = 750,
+            Default = FOVRadius
+        },
+        Callback = function(value)
+            FOVRadius = tonumber(value) or 120
+            if SilentFOVCircle then
+                if isMobile then
+                    SilentFOVCircle.Size = UDim2.fromOffset(FOVRadius * 2, FOVRadius * 2)
+                else
+                    SilentFOVCircle.Radius = FOVRadius
+                end
+            end
+        end
+    }
+)
+myConfig:Register("FOVRadius", FOVSlider)
+
+-- Friends List Input
+local FriendsInput =
+    Tab:Input(
+    {
+        Title = "Safe Friend List",
+        Desc = "Enter Player Name",
+        Value = "",
+        InputIcon = "shield-check",
+        Type = "Input",
+        Placeholder = "",
+        Callback = function(input)
+            excludedPlayerNames = {}
+            for name in string.gmatch(input, "%S+") do
+                table.insert(excludedPlayerNames, name)
+            end
+            for _, player in pairs(Players:GetPlayers()) do
+                if espPlayers[player] and espPlayers[player].drawings then
+                    local nameText = espPlayers[player].drawings[1]
+                    nameText.Color = 
+                        isPlayerExcluded(player.Name) and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255)
+                end
+            end
+        end
+    }
+)
+myConfig:Register("FriendsList", FriendsInput)
+
 local Players = game:GetService("Players")
 local TeleportService = game:GetService("TeleportService")
 local HttpService = game:GetService("HttpService")
