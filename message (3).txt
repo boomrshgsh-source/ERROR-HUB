@@ -39,10 +39,10 @@ if WindUI then
     Window =
         WindUI:CreateWindow(
         {
-            Title = "หีหมา🔫 | 0.1z | free  ",
-            Icon = "cloud-lightning",
-            Author = "creator GODHUB",
-            Folder = "yomo Now",
+            Title = "ERROR HUB",
+            Icon = rbxassetid://87372447687978,
+            Author = "Block spin",
+            Folder = "ERROR HUB",
             Size = UDim2.fromOffset(400, 200),
             Theme = "Dark",
             Transparent = true,
@@ -1821,7 +1821,7 @@ myConfig:Register("SilentAim", SilentToggle)
 local GoodGunToggle =
     Tab:Toggle(
     {
-        Title = "Silent Aim(ยิงทะลุ)",
+        Title = "Silent Aim",
         Default = false,
         Callback = function(state)
             GoodGunEnabled = state
@@ -2507,4 +2507,5 @@ myConfig:Register("DeleteConfig", DeleteConfigButton)
 -- โหลด Config
 if loadFunc then
     loadFunc(myConfig)
+
 end
