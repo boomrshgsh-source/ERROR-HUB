@@ -1996,6 +1996,82 @@ local ItemsESPToggle =
         end
     }
 )
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local BLUE_COLOR = Color3.fromRGB(0, 162, 255)  -- สีฟ้าสดใส
+
+local DroppedItems = workspace:WaitForChild("DroppedItems")
+
+local function createESP(obj)
+    if obj.Name == "Money" then return end  -- ข้าม Money
+
+    local color = BLUE_COLOR
+
+    -- Highlight
+    local highlight = Instance.new("Highlight")
+    highlight.Name = "ESP_Highlight"
+    highlight.Adornee = obj
+    highlight.FillTransparency = 1
+    highlight.OutlineColor = color
+    highlight.Parent = obj
+
+    -- BillboardGui
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_Billboard"
+
+    if obj:IsA("Model") then
+        if not obj.PrimaryPart then
+            obj.PrimaryPart = obj:FindFirstChildWhichIsA("BasePart")
+        end
+        billboard.Adornee = obj.PrimaryPart
+    else
+        billboard.Adornee = obj
+    end
+
+    billboard.AlwaysOnTop = true
+    billboard.Size = UDim2.new(0, 120, 0, 40)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.Parent = obj
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.BackgroundTransparency = 1
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeTransparency = 0
+    textLabel.Font = Enum.Font.SourceSansBold
+    textLabel.TextScaled = false
+    textLabel.TextSize = 14
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.Text = obj.Name
+    textLabel.Parent = billboard
+
+    local connection
+    connection = RunService.RenderStepped:Connect(function()
+        if not obj or not obj.Parent then
+            connection:Disconnect()
+            return
+        end
+
+        local dist = 0
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            dist = (LocalPlayer.Character.HumanoidRootPart.Position - (obj.PrimaryPart and obj.PrimaryPart.Position or obj.Position)).Magnitude
+        end
+
+        textLabel.Text = string.format("%s\n%.1f studs", obj.Name, dist)
+    end)
+end
+
+-- สร้าง ESP สำหรับของที่มีอยู่แล้ว
+for _, item in ipairs(DroppedItems:GetChildren()) do
+    createESP(item)
+end
+
+-- สร้าง ESP อัตโนมัติเมื่อมีของตกใหม่
+DroppedItems.ChildAdded:Connect(function(child)
+    createESP(child)
+end)
+
 myConfig:Register("ItemsESP", ItemsESPToggle)
 local Tab_Character = Window:Tab({Title = "CHARACTER:", Icon = "user"})
 Tab_Character:Section({Title = "CHARACTER:"})
@@ -2510,5 +2586,6 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
