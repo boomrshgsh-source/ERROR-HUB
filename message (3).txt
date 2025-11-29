@@ -2443,6 +2443,103 @@ local SnapSlider =
     }
 )
 myConfig:Register("SnapHeight", SnapSlider)
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local DanceAndSpinEnabled = false
+local danceTrack = nil
+
+-- เริ่ม Anti Aim
+local function startDanceAndSpin()
+    local char = player.Character
+    if not char then return end
+    local humanoid = char:WaitForChild("Humanoid")
+
+    if not danceTrack or danceTrack.Parent ~= humanoid then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://104767795538635"
+        danceTrack = humanoid:LoadAnimation(anim)
+        danceTrack.Looped = true
+    end
+
+    danceTrack:Play()
+    danceTrack:AdjustSpeed(2.5)
+end
+
+-- หยุด Anti Aim
+local function stopDanceAndSpin()
+    DanceAndSpinEnabled = false
+
+    if danceTrack then
+        danceTrack:Stop()
+    end
+
+    -- ล้างมุมหมุนตัว
+    local char = player.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local hrp = char.HumanoidRootPart
+        local pos = hrp.CFrame.Position
+        hrp.CFrame = CFrame.new(pos)
+    end
+end
+
+-- หมุนทุกเฟรม
+RunService.RenderStepped:Connect(function()
+    if DanceAndSpinEnabled then
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(10), 0)
+        end
+    end
+end)
+
+-- Respawn
+player.CharacterAdded:Connect(function(char)
+    danceTrack = nil 
+    local humanoid = char:WaitForChild("Humanoid")
+
+    humanoid.Died:Connect(function()
+        stopDanceAndSpin()
+    end)
+
+    if DanceAndSpinEnabled then
+        startDanceAndSpin()
+    end
+end)
+
+if player.Character then
+    local humanoid = player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            stopDanceAndSpin()
+        end)
+    end
+end
+
+-- ============================
+-- 🔥 ปุ่มใน Tab_Character
+-- ============================
+
+local AntiAimToggle = Tab_Character:Toggle({
+    Title = "Anti Aim",
+    Desc = "กันล็อค",
+    Default = false,
+    Callback = function(state)
+        DanceAndSpinEnabled = state
+
+        if state then
+            startDanceAndSpin()
+        else
+            stopDanceAndSpin()
+        end
+    end
+})
+
+myConfig:Register("AntiAim", AntiAimToggle)
+
 local Tab_player = Window:Tab({Title = "PLAYER:", Icon = "person-standing"})
 Tab_player:Section({Title = "PLAYER:"})
 local Input =
@@ -2627,6 +2724,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
