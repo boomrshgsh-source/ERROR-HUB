@@ -40,7 +40,7 @@ if WindUI then
         WindUI:CreateWindow(
         {
             Title = "ERROR HUB",
-            Icon = rbxassetid://87372447687978,
+            Icon = "rbxassetid://87372447687978",
             Author = "Block spin",
             Folder = "ERROR HUB",
             Size = UDim2.fromOffset(400, 200),
@@ -2510,4 +2510,5 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
