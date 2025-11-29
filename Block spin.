@@ -136,7 +136,7 @@ if WindUI then
         WindUI:CreateWindow(
         {
             Title = "ERROR HUB",
-            Icon = 87372447687978,
+            Icon = "rbxassetid://87372447687978",
             Author = "Block spin",
             Folder = "ERROR_HUBOP",
             Size = UDim2.fromOffset(400, 200),
