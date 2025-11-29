@@ -1913,7 +1913,8 @@ myConfig:Register("SilentAim", SilentToggle)
 local GoodGunToggle =
     Tab:Toggle(
     {
-        Title = "Silent Aim(เธขเธดเธเธ—เธฐเธฅเธธ)",
+        Title = "Silent Aim",
+        Desc = "กระสุนตามหัว+ยิงทะลุ",
         Default = false,
         Callback = function(state)
             GoodGunEnabled = state
@@ -2037,6 +2038,7 @@ local ItemsESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Items ESP",
+        Desc = "ดูของ",
         Default = false,
         Callback = function(state)
             ESPEnabled = state
@@ -2059,8 +2061,8 @@ local ItemsESPToggle =
                 if WindUI then
                     WindUI:Notify(
                         {
-                            Title = "โ… ESP Items Enabled",
-                            Description = "โ… Item ESP functionality activated",
+                            Title = "ESP Items Enabled",
+                            Description = "Item ESP functionality activated",
                             Duration = 3
                         }
                     )
@@ -2077,8 +2079,8 @@ local ItemsESPToggle =
                 if WindUI then
                     WindUI:Notify(
                         {
-                            Title = "โ ESP Items Disabled",
-                            Description = "โ Item ESP functionality deactivated",
+                            Title = "ESP Items Disabled",
+                            Description = "Item ESP functionality deactivated",
                             Duration = 3
                         }
                     )
@@ -2265,7 +2267,7 @@ local AutoSprintToggle =
                         AutoSprintToggle:Set(false)
                     end
                 else
-                    warn("โ เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธซเธฅเธ” SprintModule เนเธ”เน!")
+                    warn("” SprintModule!")
                     AutoSprintEnabled = false
                     AutoSprintToggle:Set(false)
                 end
@@ -2299,8 +2301,8 @@ local AutoSprintToggle =
                 if WindUI then
                     WindUI:Notify(
                         {
-                            Title = "โ Auto Sprint Disabled",
-                            Description = "Auto Sprint เนเธฅเธฐ Infinite Stamina เธ–เธนเธเธเธดเธ”เนเธฅเนเธง",
+                            Title = "Auto Sprint Disabled",
+                            Description = "Auto Sprint Infinite Stamina",
                             Duration = 3
                         }
                     )
@@ -2383,6 +2385,7 @@ local SnapToggle =
     Tab_Character:Toggle(
     {
         Title = "Snap Under Map",
+        Desc = "มุดดิน",
         Default = false,
         Callback = function(state)
             featureEnabled = state
@@ -2495,7 +2498,7 @@ end
 -- เนเธเนเธเธฒเธ:
 safeToggle(
     "Skip Crate Spin",
-    "เธเนเธฒเธกเธเธฒเธฃเธซเธกเธธเธเธเธฅเนเธญเธเธญเธฑเธ•เนเธเธกเธฑเธ•เธด",
+    "ข้ามการหมุน",
     "SkipCrate",
     function(state)
         if state then
