@@ -1822,6 +1822,7 @@ local GoodGunToggle =
     Tab:Toggle(
     {
         Title = "Silent Aim",
+        Desc = "กระสุนตาม+ยิงทะลุ",
         Default = false,
         Callback = function(state)
             GoodGunEnabled = state
@@ -2509,3 +2510,4 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
