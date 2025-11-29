@@ -1996,28 +1996,28 @@ local ItemsESPToggle =
         end
     }
 )
+myConfig:Register("ItemsESP", ItemsESPToggle)
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
-local BLUE_COLOR = Color3.fromRGB(0, 162, 255)  -- สีฟ้าสดใส
-
+local BLUE_COLOR = Color3.fromRGB(0, 162, 255)
 local DroppedItems = workspace:WaitForChild("DroppedItems")
 
+local ESPEnabled = false
+local ESPConnections = {}
+
 local function createESP(obj)
-    if obj.Name == "Money" then return end  -- ข้าม Money
+    if obj.Name == "Money" then return end
 
-    local color = BLUE_COLOR
-
-    -- Highlight
     local highlight = Instance.new("Highlight")
     highlight.Name = "ESP_Highlight"
     highlight.Adornee = obj
     highlight.FillTransparency = 1
-    highlight.OutlineColor = color
+    highlight.OutlineColor = BLUE_COLOR
     highlight.Parent = obj
 
-    -- BillboardGui
     local billboard = Instance.new("BillboardGui")
     billboard.Name = "ESP_Billboard"
 
@@ -2037,7 +2037,7 @@ local function createESP(obj)
 
     local textLabel = Instance.new("TextLabel")
     textLabel.BackgroundTransparency = 1
-    textLabel.TextColor3 = color
+    textLabel.TextColor3 = BLUE_COLOR
     textLabel.TextStrokeTransparency = 0
     textLabel.Font = Enum.Font.SourceSansBold
     textLabel.TextScaled = false
@@ -2046,33 +2046,74 @@ local function createESP(obj)
     textLabel.Text = obj.Name
     textLabel.Parent = billboard
 
-    local connection
-    connection = RunService.RenderStepped:Connect(function()
+    local conn
+    conn = RunService.RenderStepped:Connect(function()
         if not obj or not obj.Parent then
-            connection:Disconnect()
+            conn:Disconnect()
             return
         end
-
         local dist = 0
         if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             dist = (LocalPlayer.Character.HumanoidRootPart.Position - (obj.PrimaryPart and obj.PrimaryPart.Position or obj.Position)).Magnitude
         end
-
         textLabel.Text = string.format("%s\n%.1f studs", obj.Name, dist)
     end)
+
+    table.insert(ESPConnections, conn)
 end
 
--- สร้าง ESP สำหรับของที่มีอยู่แล้ว
-for _, item in ipairs(DroppedItems:GetChildren()) do
-    createESP(item)
+local function clearESP()
+    for _, item in ipairs(DroppedItems:GetChildren()) do
+        local highlight = item:FindFirstChild("ESP_Highlight")
+        if highlight then highlight:Destroy() end
+        local billboard = item:FindFirstChild("ESP_Billboard")
+        if billboard then billboard:Destroy() end
+    end
+
+    for _, conn in ipairs(ESPConnections) do
+        if conn and conn.Connected then
+            conn:Disconnect()
+        end
+    end
+
+    ESPConnections = {}
 end
 
--- สร้าง ESP อัตโนมัติเมื่อมีของตกใหม่
-DroppedItems.ChildAdded:Connect(function(child)
-    createESP(child)
-end)
+local ChildAddedConnection
 
-myConfig:Register("ItemsESP", ItemsESPToggle)
+local function updateESP(enabled)
+    if enabled then
+        for _, item in ipairs(DroppedItems:GetChildren()) do
+            createESP(item)
+        end
+        if not ChildAddedConnection then
+            ChildAddedConnection = DroppedItems.ChildAdded:Connect(function(child)
+                if ESPEnabled then
+                    createESP(child)
+                end
+            end)
+        end
+    else
+        clearESP()
+        if ChildAddedConnection then
+            ChildAddedConnection:Disconnect()
+            ChildAddedConnection = nil
+        end
+    end
+end
+
+local DropitemsToggle = Tab_ESP:Toggle({
+    Title = "Dropitems ESP",
+    Desc = "มองไอเท็มที่ตกพื้น",
+    Default = false,
+    Callback = function(state)
+        ESPEnabled = state
+        updateESP(state)
+    end
+})
+
+myConfig:Register("Highlight", DropitemsToggle)
+
 local Tab_Character = Window:Tab({Title = "CHARACTER:", Icon = "user"})
 Tab_Character:Section({Title = "CHARACTER:"})
 local WalkSpeedToggle =
@@ -2586,6 +2627,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
