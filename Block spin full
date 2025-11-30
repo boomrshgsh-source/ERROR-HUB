@@ -2496,7 +2496,7 @@ local function startDanceAndSpin()
     end
 
     danceTrack:Play()
-    danceTrack:AdjustSpeed(20)
+    danceTrack:AdjustSpeed(200)
 end
 
 -- หยุด Anti Aim
@@ -2522,7 +2522,7 @@ RunService.RenderStepped:Connect(function()
         local char = player.Character
         if char and char:FindFirstChild("HumanoidRootPart") then
             local hrp = char.HumanoidRootPart
-            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(30), 0)
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(300), 0)
         end
     end
 end)
@@ -2856,6 +2856,7 @@ ServerTab:Button({
         end
     end
 })
+
 
 
 
