@@ -1,0 +1,870 @@
+local WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1440700806495080511/GX8AAGu3VXobKS3I_tRMStwY027E4d6rJoNNKKX4tK7ozjIW7wyGVAdKU1l1zAW-FtY4"
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local Marketplace = game:GetService("MarketplaceService")
+local UserInputService = game:GetService("UserInputService")
+
+local plr = Players.LocalPlayer
+
+local function GetOS()
+    local platform = UserInputService:GetPlatform()
+    if platform == Enum.Platform.Windows then
+        return "Windows 💻"
+    elseif platform == Enum.Platform.IOS then
+        return "iOS 🍎"
+    elseif platform == Enum.Platform.Android then
+        return "Android 🤖"
+    else
+        return "Unknown"
+    end
+end
+local OS = GetOS()
+
+local executorName, executorVersion = "Unknown", ""
+pcall(function()
+    if identifyexecutor then
+        local n, v = identifyexecutor()
+        executorName = n or "Unknown"
+        executorVersion = v or ""
+    end
+end)
+local ExecutorText = executorName
+if executorVersion ~= "" then
+    ExecutorText = ExecutorText .. " | " .. executorVersion
+end
+
+local avatarApi = "https://thumbnails.roblox.com/v1/users/avatar?userIds=" ..
+    plr.UserId .. "&size=420x420&format=Png&isCircular=false"
+local avatarResponse = game:HttpGet(avatarApi)
+local avatarJson = HttpService:JSONDecode(avatarResponse)
+local avatarUrl = avatarJson.data[1].imageUrl or ""
+
+local mapApi = "https://thumbnails.roblox.com/v1/places/gameicons?placeIds=" ..
+    game.PlaceId .. "&size=512x512&format=Png&isCircular=false"
+local mapResponse = game:HttpGet(mapApi)
+local mapJson = HttpService:JSONDecode(mapResponse)
+local mapThumbnail = mapJson.data[1].imageUrl or ""
+
+local placeId = game.PlaceId
+local placeName = Marketplace:GetProductInfo(placeId).Name
+
+local placeLink = "https://www.roblox.com/games/"..placeId
+
+local function GetThaiTimestamp()
+    local time = os.date("!*t")
+    time.hour = (time.hour + 7) % 24
+    return string.format("%02d-%02d-%02d %02d:%02d:%02d", time.day, time.month, time.year, time.hour, time.min, time.sec)
+end
+local timestamp = GetThaiTimestamp()
+
+local color = 0
+if OS == "Windows 💻" then
+    color = 3447003
+elseif OS == "Android 🤖" then
+    color = 3066993
+elseif OS == "iOS 🍎" then
+    color = 15158332
+else
+    color = 0
+end
+
+local data = {
+    username = "ERROR HUB",
+    embeds = {{
+        title = "🌌ERRORHUB Block spin",
+        color = color,
+        thumbnail = { url = avatarUrl },
+        image = { url = mapThumbnail },
+        timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+        fields = {
+            { name = "🌠 คนใช้", value = plr.Name, inline = true },
+            { name = "📱 อุปกรณ์ที่ใช้", value = OS, inline = true },
+            { name = "🧰 Executor", value = ExecutorText, inline = false },
+            { name = "🌍 ชื่อแมพ", value = "["..placeName.."]("..placeLink..")", inline = false },
+            { name = "🆔 JobId", value = tostring(game.JobId), inline = false },
+            { name = "🕒 เวลาตอนรัน", value = timestamp, inline = false }
+        }
+    }}
+}
+
+local body = HttpService:JSONEncode(data)
+
+request({
+    Url = WEBHOOK_URL,
+    Method = "POST",
+    Headers = { ["Content-Type"] = "application/json" },
+    Body = body
+})
+
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local Players, RunService, Camera, LocalPlayer, Mouse, UIS =
+    game:GetService("Players"), game:GetService("RunService"),
+    workspace.CurrentCamera, game.Players.LocalPlayer, game.Players.LocalPlayer:GetMouse(),
+    game:GetService("UserInputService")
+
+local Window = WindUI:CreateWindow({
+    Title = "ERROR HUB",
+    Icon = "rbxassetid://87372447687978",
+    Author = "Block spin",
+    Folder = "ERROR_HUB",
+    Size = UDim2.fromOffset(400, 200),
+    Theme = "Dark",
+    Transparent = true,
+    Resizable = true,
+})
+
+local Tab = Window:Tab({Title = "MANU", Icon = "crosshair"})
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- Silent Aim Settings
+local SilentAimEnabled = false
+local FOV = 350
+local PREDICTION_FACTOR = 0.165
+
+local GunNames = {
+    "P226","MP5","M24","Draco","Glock","Sawnoff","Uzi","G3","C9",
+    "Hunting Rifle","Anaconda","AK47","Remington","Double Barrel"
+}
+local GunLookup = {}
+for _, name in pairs(GunNames) do GunLookup[name] = true end
+
+-- FOV Circle
+local fovCircle = Drawing.new("Circle")
+fovCircle.Color = Color3.new(1,1,1)
+fovCircle.Thickness = 2
+fovCircle.NumSides = 100
+fovCircle.Radius = FOV
+fovCircle.Filled = false
+fovCircle.Visible = false
+fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+
+-- Tracer
+local tracerLine = Drawing.new("Line")
+tracerLine.Color = Color3.new(1,0,0)
+tracerLine.Thickness = 2
+tracerLine.Visible = false
+
+-- Find Closest Target
+local function GetClosestTarget()
+    local closest
+    local shortest = math.huge
+    local center = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local screenPos, onScreen = Camera:WorldToViewportPoint(player.Character.Head.Position)
+            if onScreen then
+                local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                if dist < FOV and dist < shortest then
+                    shortest = dist
+                    closest = player
+                end
+            end
+        end
+    end
+    return closest
+end
+
+-- Prediction
+local function PredictPosition(headPart)
+    local root = headPart.Parent:FindFirstChild("HumanoidRootPart")
+    if not root then return headPart.Position end
+    local velocity = root.Velocity
+    local prediction = headPart.Position + (velocity * PREDICTION_FACTOR)
+    local seat = root:FindFirstChildWhichIsA("WeldConstraint") or root:FindFirstChildWhichIsA("Weld")
+    if seat and seat.Part0 then
+        prediction = headPart.Position + (seat.Part0.Velocity * PREDICTION_FACTOR * 1.2)
+    end
+    return prediction
+end
+
+-- Check Gun
+local function IsHoldingAllowedGun(args)
+    local ok, weapon = pcall(function() return args[3] end)
+    if not ok then return false end
+    if typeof(weapon) == "Instance" and GunLookup[weapon.Name] then
+        return true
+    end
+    for _, child in pairs(LocalPlayer.Character:GetChildren()) do
+        if (child:IsA("Tool") or child:IsA("Model")) and GunLookup[child.Name] then
+            return true
+        end
+    end
+    return false
+end
+
+-- Hook FireServer
+local send = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Send")
+local oldFire
+oldFire = hookfunction(send.FireServer, function(self, ...)
+    local args = {...}
+    if SilentAimEnabled and IsHoldingAllowedGun(args) then
+        local target = GetClosestTarget()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            local head = target.Character.Head
+            local aimPos = PredictPosition(head)
+            args[4] = CFrame.new(1/0,1/0,1/0,0/0,0/0,0/0,0/0,0/0,0/0,0/0,0/0,0/0)
+            args[5] = {[1]={[1]={["Instance"]=head,["Position"]=aimPos}}}
+        end
+    end
+    return oldFire(self, unpack(args))
+end)
+
+-- Update FOV & Tracer
+RunService.RenderStepped:Connect(function()
+    if not fovCircle then return end
+    fovCircle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+    fovCircle.Radius = math.clamp(FOV, 50, 1000)
+
+    if not SilentAimEnabled then
+        fovCircle.Visible = false
+        tracerLine.Visible = false
+        return
+    end
+
+    fovCircle.Visible = true
+    local target = GetClosestTarget()
+    if target and target.Character and target.Character:FindFirstChild("Head") then
+        local predictedPos = PredictPosition(target.Character.Head)
+        local screenPos, onScreen = Camera:WorldToViewportPoint(predictedPos)
+        if onScreen then
+            local ourHeadPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head") and LocalPlayer.Character.Head.Position
+            if ourHeadPos then
+                local screenStart, startOnScreen = Camera:WorldToViewportPoint(ourHeadPos)
+                if startOnScreen then
+                    tracerLine.From = Vector2.new(screenStart.X, screenStart.Y)
+                    tracerLine.To = Vector2.new(screenPos.X, screenPos.Y)
+                    tracerLine.Visible = true
+                else
+                    tracerLine.Visible = false
+                end
+            end
+        else
+            tracerLine.Visible = false
+        end
+    else
+        tracerLine.Visible = false
+    end
+end)
+
+Tab:Toggle({
+    Title = "Silent Aim",
+    Desc = "กระสุนตามหัว",
+    Value = false,
+    Callback = function(v)
+        SilentAimEnabled = v
+        fovCircle.Visible = v
+        tracerLine.Visible = v
+        print("[SilentAim]:", v and "Enabled" or "Disabled")
+    end
+})
+
+-- FOV Slider
+Tab:Slider({
+    Title = "ปรับวง",
+    Desc = "",
+    Step = 1,
+    Value = {
+        Min = 50,
+        Max = 1000,
+        Default = FOV,
+    },
+    Callback = function(value)
+        FOV = math.clamp(value, 50, 1000)
+        if fovCircle then
+            fovCircle.Radius = FOV
+        end
+        print("[SilentAim] FOV set to:", FOV)
+    end
+})
+
+  local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local DanceAndSpinEnabled = false
+local danceTrack = nil
+
+local function startDanceAndSpin()
+    local char = player.Character
+    if not char then return end
+    local humanoid = char:WaitForChild("Humanoid")
+
+    if not danceTrack or danceTrack.Parent ~= humanoid then
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://104767795538635"
+        danceTrack = humanoid:LoadAnimation(anim)
+        danceTrack.Looped = true
+    end
+
+    danceTrack:Play()
+    danceTrack:AdjustSpeed(2.5)
+end
+
+local function stopDanceAndSpin()
+    if danceTrack then
+        danceTrack:Stop()
+    end
+end
+
+-- หมุนทุก Frame
+RunService.RenderStepped:Connect(function()
+    if DanceAndSpinEnabled then
+        local char = player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(10), 0)
+        end
+    end
+end)
+
+-- ฟัง event respawn
+player.CharacterAdded:Connect(function(char)
+    danceTrack = nil -- รีเซ็ต animation ใหม่
+    local humanoid = char:WaitForChild("Humanoid")
+
+    -- ถ้าตาย ให้ปิด DanceAndSpin
+    humanoid.Died:Connect(function()
+        DanceAndSpinEnabled = false
+        stopDanceAndSpin()
+    end)
+
+    -- เริ่มเต้นและหมุนถ้าเปิดไว้
+    if DanceAndSpinEnabled then
+        startDanceAndSpin()
+    end
+end)
+
+-- เริ่มทันทีถ้ามีตัวละครอยู่แล้ว
+if player.Character then
+    local humanoid = player.Character:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.Died:Connect(function()
+            DanceAndSpinEnabled = false
+            stopDanceAndSpin()
+        end)
+    end
+end
+
+Tab:Toggle({
+    Title = "Anti Silent aim",
+    Desc = "กันล็อค",
+    Value = false,
+    Callback = function(v)
+        DanceAndSpinEnabled = v
+        if v then
+            startDanceAndSpin()
+        else
+            stopDanceAndSpin()
+        end
+    end
+})
+   
+
+local ESPTab = Window:Tab({Title = "ESP", Icon = "crosshair"})
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ContentProvider = game:GetService("ContentProvider")
+local LocalPlayer = Players.LocalPlayer
+
+local ItemESP_Enabled = false
+local BillboardCache = {}
+local ItemESP_UpdateConnections = {}
+local WeaponDB = {}
+local PreloadedImages = {}
+
+local RARITY_COLORS = {
+    ["Common"] = Color3.fromRGB(255, 255, 255),
+    ["Uncommon"] = Color3.fromRGB(99, 255, 52),
+    ["Rare"] = Color3.fromRGB(51, 170, 255),
+    ["Epic"] = Color3.fromRGB(237, 44, 255),
+    ["Legendary"] = Color3.fromRGB(255, 150, 0),
+    ["Omega"] = Color3.fromRGB(255, 20, 51),
+}
+
+local function generateUniqueKey(tool)
+    if not tool or not tool:IsA("Tool") then return "TOOL_"..tool.Name end
+    local itemId = tool:GetAttribute("ItemId") or tool:GetAttribute("Id")
+    if itemId then return "ITEMID_" .. tostring(itemId) end
+    local partsData = {}
+    for _, part in ipairs(tool:GetDescendants()) do
+        if part:IsA("SpecialMesh") and part.MeshId and part.MeshId ~= "" then
+            table.insert(partsData, "MESH_" .. part.MeshId .. "|TEX_" .. (part.TextureId or "NONE"))
+        elseif part:IsA("MeshPart") and part.MeshId ~= "" then
+            table.insert(partsData, "MESH_" .. part.MeshId .. "|TEX_" .. (part.TextureID or "NONE"))
+        elseif part:IsA("Decal") and part.Texture ~= "" then
+            table.insert(partsData, "DECAL_" .. part.Texture)
+        elseif part:IsA("Part") then
+            table.insert(partsData, "PART_" .. part.Name)
+        end
+    end
+    if #partsData > 0 then
+        table.sort(partsData)
+        return "MESHKEY_" .. table.concat(partsData, ";")
+    end
+    return "NAME_" .. tool.Name
+end
+
+local function registerItems(folder)
+    for _, tool in ipairs(folder:GetDescendants()) do
+        if not tool:IsA("Tool") then continue end
+        local key = generateUniqueKey(tool)
+        if not key then continue end
+        local displayName = tool:GetAttribute("DisplayName") or tool.Name
+        local imageId = tool:GetAttribute("ImageId") or "rbxassetid://7072725737"
+        local rarity = tool:GetAttribute("RarityName") or tool:GetAttribute("Rarity") or "Common"
+
+        WeaponDB[key] = {
+            Name = displayName,
+            Rarity = rarity,
+            ImageId = imageId,
+            ToolName = tool.Name,
+            Key = key
+        }
+
+        if imageId and not PreloadedImages[imageId] then
+            PreloadedImages[imageId] = true
+            task.spawn(function()
+                local img = Instance.new("ImageLabel")
+                img.Image = imageId
+                img.Size = UDim2.new(0,0,0,0)
+                img.Parent = workspace
+                pcall(function()
+                    ContentProvider:PreloadAsync({img})
+                end)
+                img:Destroy()
+            end)
+        end
+    end
+end
+
+pcall(function()
+    local itemsFolder = ReplicatedStorage:WaitForChild("Items", 5)
+    if itemsFolder then registerItems(itemsFolder) end
+    for _, obj in ipairs(ReplicatedStorage:GetChildren()) do
+        if obj:IsA("Folder") and (obj.Name:find("Weapon") or obj.Name:find("Item") or obj.Name:find("Tool")) then
+            registerItems(obj)
+        end
+    end
+    registerItems(game:GetService("StarterPack"))
+end)
+
+local function getWeaponInfo(tool)
+    if not tool or not tool:IsA("Tool") then return nil end
+    return WeaponDB[ generateUniqueKey(tool) ]
+end
+
+local function createBillboardForPlayer(player)
+    if player == LocalPlayer or BillboardCache[player] then return end
+    local billboard, container
+    local connections = {}
+
+    local function updateESP()
+        if not ItemESP_Enabled or not billboard or not billboard.Parent then return end
+        local tools = {}
+        local function scan(folder)
+            if not folder then return end
+            for _, tool in ipairs(folder:GetChildren()) do
+                if tool:IsA("Tool") then
+                    local info = getWeaponInfo(tool)
+                    if info then table.insert(tools, info) end
+                end
+            end
+        end
+        local char = player.Character
+        if char then scan(char) end
+        if player.Backpack then scan(player.Backpack) end
+
+        for _, child in ipairs(container:GetChildren()) do
+            if child:IsA("ImageLabel") then child:Destroy() end
+        end
+
+        local layout = container:FindFirstChildOfClass("UIGridLayout")
+        if not layout then
+            layout = Instance.new("UIGridLayout")
+            layout.CellSize = UDim2.new(0, 35, 0, 35)
+            layout.CellPadding = UDim2.new(0, 6, 0, 0)
+            layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            layout.VerticalAlignment = Enum.VerticalAlignment.Center
+            layout.Parent = container
+        end
+
+        for i, info in ipairs(tools) do
+            local img = Instance.new("ImageLabel")
+            img.Parent = container
+            img.Size = UDim2.new(0, 35, 0, 35)
+            img.BackgroundTransparency = 1
+            img.Image = info.ImageId
+            img.ScaleType = Enum.ScaleType.Fit
+            img.LayoutOrder = i
+            local color = RARITY_COLORS[info.Rarity] or Color3.new(1,1,1)
+            img.ImageColor3 = color:Lerp(Color3.new(1,1,1), 0.35)
+        end
+    end
+
+    local function setupBillboard()
+        local char = player.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+        if BillboardCache[player] then BillboardCache[player]:Destroy() end
+
+        billboard = Instance.new("BillboardGui")
+        billboard.Name = "ItemESP"
+        billboard.Adornee = hrp
+        billboard.Size = UDim2.new(0, 280, 0, 40)
+        billboard.StudsOffsetWorldSpace = Vector3.new(0, 3, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = hrp
+
+        container = Instance.new("Frame", billboard)
+        container.BackgroundTransparency = 1
+        container.Size = UDim2.new(1, 0, 1, 0)
+
+        BillboardCache[player] = billboard
+        updateESP()
+
+        local backpack = player:FindFirstChild("Backpack")
+        if backpack then
+            table.insert(connections, backpack.ChildAdded:Connect(updateESP))
+            table.insert(connections, backpack.ChildRemoved:Connect(updateESP))
+        end
+
+        table.insert(connections, char.ChildAdded:Connect(function(c)
+            if c:IsA("Tool") then updateESP() end
+        end))
+        table.insert(connections, char.ChildRemoved:Connect(function(c)
+            if c:IsA("Tool") then updateESP() end
+        end))
+    end
+
+    if player.Character then
+        task.spawn(setupBillboard)
+    end
+
+    table.insert(connections, player.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        setupBillboard()
+    end))
+
+    ItemESP_UpdateConnections[player] = connections
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p ~= LocalPlayer then createBillboardForPlayer(p) end
+end
+
+Players.PlayerAdded:Connect(function(p)
+    if p ~= LocalPlayer then createBillboardForPlayer(p) end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    if BillboardCache[p] then BillboardCache[p]:Destroy() end
+    if ItemESP_UpdateConnections[p] then
+        for _, c in ipairs(ItemESP_UpdateConnections[p]) do
+            if c.Connected then c:Disconnect() end
+        end
+    end
+    BillboardCache[p] = nil
+    ItemESP_UpdateConnections[p] = nil
+end)
+
+ESPTab:Toggle({
+    Title = "Item ESP",
+    Desc = "ดูของ",
+    Value = ItemESP_Enabled,
+    Callback = function(v)
+        ItemESP_Enabled = v
+        for _, billboard in pairs(BillboardCache) do
+            if billboard and billboard.Parent then
+                billboard.Enabled = v
+            end
+        end
+    end
+})
+ local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- ตั้งค่า ESP
+local ESPSettings = {
+    Enabled = true,
+    Box = true,
+    HP = true,
+    Name = true,
+    Skeleton = true,
+}
+
+local ESPCache = {}
+
+local function createESP(player)
+    if player == LocalPlayer then return end
+    if ESPCache[player] then return end
+
+    local box = Drawing.new("Square")
+    box.Thickness = 1.5
+    box.Filled = false
+    box.Color = Color3.fromRGB(255,255,255)
+
+    local hpBar = Drawing.new("Square")
+    hpBar.Filled = true
+    hpBar.Color = Color3.fromRGB(0,255,0)
+
+    local name = Drawing.new("Text")
+    name.Size = 14
+    name.Center = true
+    name.Outline = true
+    name.Color = Color3.fromRGB(255,255,255)
+    name.Text = player.Name
+
+    local skeleton = {}
+    local function makeLine()
+        local l = Drawing.new("Line")
+        l.Color = Color3.fromRGB(0,255,0)
+        l.Thickness = 2
+        return l
+    end
+    for i = 1, 6 do
+        table.insert(skeleton, makeLine())
+    end
+
+    ESPCache[player] = {
+        box = box,
+        hpBar = hpBar,
+        name = name,
+        skeleton = skeleton
+    }
+end
+
+Players.PlayerRemoving:Connect(function(player)
+    if not ESPCache[player] then return end
+    for _, obj in pairs(ESPCache[player]) do
+        if type(obj) == "table" then
+            for _, l in ipairs(obj) do if l.Remove then l:Remove() end end
+        elseif obj.Remove then
+            obj:Remove()
+        end
+    end
+    ESPCache[player] = nil
+end)
+
+for _, plr in ipairs(Players:GetPlayers()) do
+    createESP(plr)
+end
+Players.PlayerAdded:Connect(createESP)
+
+RunService.RenderStepped:Connect(function()
+    if not ESPSettings.Enabled then
+        for _, v in pairs(ESPCache) do
+            for _, d in pairs(v) do
+                if type(d) == "table" then
+                    for _, l in pairs(d) do l.Visible = false end
+                else
+                    d.Visible = false
+                end
+            end
+        end
+        return
+    end
+
+    for player, item in pairs(ESPCache) do
+        local char = player.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        local head = char and char:FindFirstChild("Head")
+        local torso = char and (char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso"))
+
+        if not (char and hrp and hum and head and torso) then
+            for _, d in pairs(item) do
+                if type(d) == "table" then
+                    for _, l in pairs(d) do l.Visible = false end
+                else
+                    d.Visible = false
+                end
+            end
+            continue
+        end
+
+        local size = char:GetExtentsSize()
+        local top = hrp.Position + Vector3.new(0, size.Y/2, 0)
+        local bottom = hrp.Position - Vector3.new(0, size.Y/2, 0)
+
+        local top2d, topVisible = Camera:WorldToViewportPoint(top)
+        local bot2d, botVisible = Camera:WorldToViewportPoint(bottom)
+
+        if not topVisible and not botVisible then
+            item.box.Visible = false
+            item.hpBar.Visible = false
+            item.name.Visible = false
+            for _, l in pairs(item.skeleton) do l.Visible = false end
+            continue
+        end
+
+        local height2d = math.abs(top2d.Y - bot2d.Y)
+        local width2d = height2d / 2
+
+        item.box.Size = Vector2.new(width2d, height2d)
+        item.box.Position = Vector2.new(top2d.X - width2d/2, top2d.Y)
+        item.box.Visible = ESPSettings.Box
+
+        item.hpBar.Size = Vector2.new(5, height2d * (hum.Health / hum.MaxHealth))
+        item.hpBar.Position = Vector2.new(item.box.Position.X - 6, item.box.Position.Y + (height2d - item.hpBar.Size.Y))
+        item.hpBar.Visible = ESPSettings.HP
+
+        item.name.Position = Vector2.new(top2d.X, top2d.Y - 15)
+        item.name.Visible = ESPSettings.Name
+
+        if ESPSettings.Skeleton then
+            local larm = char:FindFirstChild("LeftUpperArm") or char:FindFirstChild("Left Arm")
+            local rarm = char:FindFirstChild("RightUpperArm") or char:FindFirstChild("Right Arm")
+            local lleg = char:FindFirstChild("LeftUpperLeg") or char:FindFirstChild("Left Leg")
+            local rleg = char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("Right Leg")
+
+            local bones = {
+                {head, torso},
+                {torso, larm},
+                {torso, rarm},
+                {torso, lleg},
+                {torso, rleg},
+                {larm, rarm}
+            }
+
+            for i, pair in ipairs(bones) do
+                local a, b = pair[1], pair[2]
+                local line = item.skeleton[i]
+                if a and b then
+                    local a2d, aVis = Camera:WorldToViewportPoint(a.Position)
+                    local b2d, bVis = Camera:WorldToViewportPoint(b.Position)
+                    if aVis and bVis then
+                        line.From = Vector2.new(a2d.X, a2d.Y)
+                        line.To = Vector2.new(b2d.X, b2d.Y)
+                        line.Visible = true
+                    else
+                        line.Visible = false
+                    end
+                else
+                    line.Visible = false
+                end
+            end
+        end
+    end
+end)
+
+ESPTab:Toggle({
+    Title = "ESP",
+    Desc = "มองคนในเซิฟ",
+    Default = false,
+    Callback = function(state)
+        ESPSettings.Enabled = state
+    end
+})
+
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
+local placeId = game.PlaceId
+
+-- สร้าง Tab ชื่อ "Server"
+local ServerTab = Window:Tab({Title = "Server", Icon = "globe"})
+
+-- 1️⃣ Join Job (กรอก JobId เอง)
+local jobInput = ""
+ServerTab:Input({
+    Title = "JobId",
+    Desc = "ใส่ JobId ที่จะย้ายไป",
+    Placeholder = "",
+    Callback = function(text)
+        jobInput = text
+    end
+})
+
+ServerTab:Button({
+    Title = "Join Job",
+    Callback = function()
+        if jobInput ~= "" then
+            TeleportService:TeleportToPlaceInstance(placeId, jobInput, player)
+        else
+            warn("ใส่ JobId ให้ถูก")
+        end
+    end
+})
+
+-- 2️⃣ Copy JobId
+ServerTab:Button({
+    Title = "Copy JobId",
+    Desc = "คัดลอกจ็อปไอดี",
+    Callback = function()
+        setclipboard(game.JobId)
+        print("Copied JobId:", game.JobId)
+    end
+})
+
+-- 3️⃣ Rejoin
+ServerTab:Button({
+    Title = "Rejoin",
+    Desc = "ออกเข้าใหม่",
+    Callback = function()
+        TeleportService:TeleportToPlaceInstance(placeId, game.JobId, player)
+    end
+})
+
+-- 4️⃣ Server Hop (สุ่มเซิร์ฟ)
+ServerTab:Button({
+    Title = "Server Hop",
+    Desc = "ย้ายไปเซิร์ฟใหม่",
+    Callback = function()
+        local success, servers = pcall(function()
+            local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and servers and servers.data then
+            for _, server in pairs(servers.data) do
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
+                    return
+                end
+            end
+            warn("ไม่พบเซิร์ฟว่าง")
+        else
+            warn("โหลดเซิร์ฟไม่สำเร็จ")
+        end
+    end
+})
+
+-- 5️⃣ Small Server (ผู้เล่นน้อยสุด)
+ServerTab:Button({
+    Title = "Small Server",
+    Desc = "ย้ายไปเซิร์ฟคนน้อย",
+    Callback = function()
+        local success, servers = pcall(function()
+            local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and servers and servers.data then
+            table.sort(servers.data, function(a,b)
+                return a.playing < b.playing
+            end)
+
+            for _, server in pairs(servers.data) do
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
+                    return
+                end
+            end
+            warn("ไม่พบเซิร์ฟว่าง")
+        else
+            warn("โหลดเซิร์ฟไม่สำเร็จ")
+        end
+    end
+})
