@@ -778,7 +778,7 @@ local function createBillboardForPlayer(player)
         return
     end
     if BillboardCache[player] then
-        BillboardCache[player]:Destroy() -- ลบอันเก่าก่อนสร้างใหม่เพื่อป้องกันค้าง
+        BillboardCache[player]:Destroy() -- ลบอันเก่าก่อนสร้างใหม่กันแล็ค
         BillboardCache[player] = nil
     end
     local billboard = Instance.new("BillboardGui")
@@ -2451,7 +2451,7 @@ local player = Players.LocalPlayer
 local DanceAndSpinEnabled = false
 local danceTrack = nil
 
--- เริ่ม Anti Aim
+--  Anti Aim
 local function startDanceAndSpin()
     local char = player.Character
     if not char then return end
@@ -2476,7 +2476,7 @@ local function stopDanceAndSpin()
         danceTrack:Stop()
     end
 
-    -- ล้างมุมหมุนตัว
+    
     local char = player.Character
     if char and char:FindFirstChild("HumanoidRootPart") then
         local hrp = char.HumanoidRootPart
@@ -2485,7 +2485,7 @@ local function stopDanceAndSpin()
     end
 end
 
--- หมุนทุกเฟรม
+-- หมุน
 RunService.RenderStepped:Connect(function()
     if DanceAndSpinEnabled then
         local char = player.Character
@@ -2519,9 +2519,6 @@ if player.Character then
     end
 end
 
--- ============================
--- 🔥 ปุ่มใน Tab_Character
--- ============================
 
 local AntiAimToggle = Tab_Character:Toggle({
     Title = "Anti Aim",
@@ -2724,6 +2721,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
