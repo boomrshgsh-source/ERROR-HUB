@@ -82,7 +82,6 @@ local IconCorner = Instance.new("UICorner")
 ScreenGui.Name = "GAMEDEE"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = game.CoreGui
-if not isMobile then -- ซ่อน OpenIcon บนมือถือ
     OpenIcon.Size = UDim2.new(0, 50, 0, 50)
     OpenIcon.Position = UDim2.new(0.5, 0, 0, 40)
     OpenIcon.AnchorPoint = Vector2.new(0.5, 0)
@@ -2857,6 +2856,7 @@ ServerTab:Button({
         end
     end
 })
+
 
 
 
