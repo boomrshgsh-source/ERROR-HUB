@@ -2754,6 +2754,109 @@ if loadFunc then
 
 end
 
+-- tp all
+
+local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
+local placeId = game.PlaceId
+
+-- สร้าง Tab Server
+local ServerTab = Window:Tab({Title = "Server", Icon = "globe"})
+
+-- 1️⃣ Join Job 
+local jobInput = ""
+ServerTab:Input({
+    Title = "JobId",
+    Desc = "ใส่ JobId ที่จะย้ายไป",
+    Placeholder = "",
+    Callback = function(text)
+        jobInput = text
+    end
+})
+
+ServerTab:Button({
+    Title = "Join Job",
+    Callback = function()
+        if jobInput ~= "" then
+            TeleportService:TeleportToPlaceInstance(placeId, jobInput, player)
+        else
+            warn("ใส่ JobId ให้ถูก")
+        end
+    end
+})
+
+-- Copy JobId
+ServerTab:Button({
+    Title = "Copy JobId",
+    Desc = "คัดลอกจ็อปไอดี",
+    Callback = function()
+        setclipboard(game.JobId)
+        print("Copied JobId:", game.JobId)
+    end
+})
+
+-- Rejoin
+ServerTab:Button({
+    Title = "Rejoin",
+    Desc = "ออกเข้าใหม่",
+    Callback = function()
+        TeleportService:TeleportToPlaceInstance(placeId, game.JobId, player)
+    end
+})
+
+-- Server Hop
+ServerTab:Button({
+    Title = "Server Hop",
+    Desc = "ย้ายไปเซิร์ฟใหม่",
+    Callback = function()
+        local success, servers = pcall(function()
+            local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and servers and servers.data then
+            for _, server in pairs(servers.data) do
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
+                    return
+                end
+            end
+            warn("ไม่พบเซิร์ฟว่าง")
+        else
+            warn("โหลดเซิร์ฟไม่สำเร็จ")
+        end
+    end
+})
+
+-- 5️⃣ Small Server (ผู้เล่นน้อยสุด)
+ServerTab:Button({
+    Title = "Small Server",
+    Desc = "ย้ายไปเซิร์ฟคนน้อย",
+    Callback = function()
+        local success, servers = pcall(function()
+            local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and servers and servers.data then
+            table.sort(servers.data, function(a,b)
+                return a.playing < b.playing
+            end)
+
+            for _, server in pairs(servers.data) do
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
+                    return
+                end
+            end
+            warn("ไม่พบเซิร์ฟว่าง")
+        else
+            warn("โหลดเซิร์ฟไม่สำเร็จ")
+        end
+    end
+})
 
 
 
