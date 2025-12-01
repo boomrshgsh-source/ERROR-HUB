@@ -3018,54 +3018,55 @@ local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 local placeId = game.PlaceId
 
--- เธชเธฃเนเธฒเธ Tab เธเธทเนเธญ "Server"
+-- Tab "Server"
 local ServerTab = Window:Tab({Title = "Server", Icon = "globe"})
 
--- 1๏ธโฃ Join Job (เธเธฃเธญเธ JobId เน€เธญเธ)
+-- Input JobId
 local jobInput = ""
 ServerTab:Input({
     Title = "JobId",
-    Desc = "เนเธชเน JobId เธ—เธตเนเธเธฐเธขเนเธฒเธขเนเธ",
+    Desc = "กรอก JobId เพื่อเข้าร่วมเซิร์ฟเวอร์นั้น",
     Placeholder = "",
     Callback = function(text)
         jobInput = text
     end
 })
 
+-- Join Job
 ServerTab:Button({
     Title = "Join Job",
     Callback = function()
         if jobInput ~= "" then
             TeleportService:TeleportToPlaceInstance(placeId, jobInput, player)
         else
-            warn("เนเธชเน JobId เนเธซเนเธ–เธนเธ")
+            warn("กรุณาใส่ JobId ก่อน")
         end
     end
 })
 
--- 2๏ธโฃ Copy JobId
+-- Copy JobId
 ServerTab:Button({
     Title = "Copy JobId",
-    Desc = "เธเธฑเธ”เธฅเธญเธเธเนเธญเธเนเธญเธ”เธต",
+    Desc = "คัดลอก JobId",
     Callback = function()
         setclipboard(game.JobId)
         print("Copied JobId:", game.JobId)
     end
 })
 
--- 3๏ธโฃ Rejoin
+-- Rejoin
 ServerTab:Button({
     Title = "Rejoin",
-    Desc = "เธญเธญเธเน€เธเนเธฒเนเธซเธกเน",
+    Desc = "ออกเข้าใหม่เข้าเซิฟเดิม",
     Callback = function()
         TeleportService:TeleportToPlaceInstance(placeId, game.JobId, player)
     end
 })
 
--- 4๏ธโฃ Server Hop (เธชเธธเนเธกเน€เธเธดเธฃเนเธ)
+-- Server Hop (ไปเซิร์ฟที่ว่างแรก)
 ServerTab:Button({
     Title = "Server Hop",
-    Desc = "เธขเนเธฒเธขเนเธเน€เธเธดเธฃเนเธเนเธซเธกเน",
+    Desc = "ย้ายไปเซิฟอื่น",
     Callback = function()
         local success, servers = pcall(function()
             local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
@@ -3079,17 +3080,17 @@ ServerTab:Button({
                     return
                 end
             end
-            warn("เนเธกเนเธเธเน€เธเธดเธฃเนเธเธงเนเธฒเธ")
+            warn("ไม่พบเซิร์ฟเวอร์ที่ว่าง")
         else
-            warn("เนเธซเธฅเธ”เน€เธเธดเธฃเนเธเนเธกเนเธชเธณเน€เธฃเนเธ")
+            warn("ไม่สามารถดึงข้อมูลเซิร์ฟเวอร์ได้")
         end
     end
 })
 
--- 5๏ธโฃ Small Server (เธเธนเนเน€เธฅเนเธเธเนเธญเธขเธชเธธเธ”)
+-- Small Server (เข้าห้องคนน้อยสุด)
 ServerTab:Button({
     Title = "Small Server",
-    Desc = "เธขเนเธฒเธขเนเธเน€เธเธดเธฃเนเธเธเธเธเนเธญเธข",
+    Desc = "ย้ายไปเซิฟคนน้อย",
     Callback = function()
         local success, servers = pcall(function()
             local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
@@ -3097,19 +3098,57 @@ ServerTab:Button({
         end)
 
         if success and servers and servers.data then
-            table.sort(servers.data, function(a,b)
+
+            table.sort(servers.data, function(a, b)
                 return a.playing < b.playing
             end)
 
-            for _, server in pairs(servers.data) do
+            for _, server in ipairs(servers.data) do
                 if server.id ~= game.JobId and server.playing < server.maxPlayers then
                     TeleportService:TeleportToPlaceInstance(placeId, server.id, player)
                     return
                 end
             end
-            warn("เนเธกเนเธเธเน€เธเธดเธฃเนเธเธงเนเธฒเธ")
+
+            warn("ไม่พบเซิร์ฟเวอร์ที่ว่าง")
         else
-            warn("เนเธซเธฅเธ”เน€เธเธดเธฃเนเธเนเธกเนเธชเธณเน€เธฃเนเธ")
+            warn("ไม่สามารถดึงข้อมูลเซิร์ฟเวอร์ได้")
+        end
+    end
+})
+
+-- Serverปิงน้อย
+ServerTab:Button({
+    Title = "Low Ping Server",
+    Desc = "ย้ายไปเซิฟปิงน้อย",
+    Callback = function()
+        local success, servers = pcall(function()
+            local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=Asc&limit=100"
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and servers and servers.data then
+            local bestServer = nil
+            local lowestPing = math.huge
+
+            for _, server in ipairs(servers.data) do
+                if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                    
+                    -- เช็คว่าเซิร์ฟเวอร์นี้มีค่า ping ส่งมามั้ย
+                    if server.ping and server.ping < lowestPing then
+                        lowestPing = server.ping
+                        bestServer = server
+                    end
+                end
+            end
+
+            if bestServer then
+                TeleportService:TeleportToPlaceInstance(placeId, bestServer.id, player)
+            else
+                warn("ไม่พบเซิร์ฟเวอร์ที่มีปิงน้อย")
+            end
+        else
+            warn("ไม่สามารถดึงข้อมูลเซิร์ฟเวอร์ได้")
         end
     end
 })
