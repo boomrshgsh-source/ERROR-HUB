@@ -99,7 +99,7 @@ if not isMobile then -- ซ่อน OpenIcon บนมือถือ
     IconImage.Size = UDim2.new(1, 0, 1, 0)
     IconImage.Position = UDim2.new(0, 0, 0, 0)
     IconImage.BackgroundTransparency = 1
-    IconImage.Image = "rbxassetid://137877095538630"
+    IconImage.Image = "rbxassetid://87372447687978"
     IconImage.Parent = OpenIcon
     -- ให้รูปภาพโค้งเหมือนปุ่ม
     IconCorner.CornerRadius = UDim.new(0, 8)
@@ -1977,11 +1977,30 @@ local function applyFastShoot()
     if WindUI then
         WindUI:Notify({
             Title = "⚡ Fast Shoot",
-            Description = "💓",
+            Description = "💨💨",
             Duration = 3
         })
     end
 end
+-- ปุ่มยิงปืนเร็ว
+Tab:Toggle({
+    Title = "Fast Shoot",
+    Desc = "ยิงปืนเร็ว",
+    Value = false,
+    Callback = function(v)
+        if v then
+            applyFastShoot()
+        else
+            if WindUI then
+                WindUI:Notify({
+                    Title = "Fast Shoot",
+                    Description = "ปิดการทำงานแล้ว",
+                    Duration = 3
+                })
+            end
+        end
+    end
+})
 
 -- ปุ่มตั้งค่าหมัดใช้งานในรถได้
 local function applyFistsInCar()
@@ -2858,6 +2877,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
