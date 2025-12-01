@@ -40,7 +40,7 @@ if WindUI then
         WindUI:CreateWindow(
         {
             Title = "ERROR HUB 💸",
-            Icon = "",
+            Icon = "rbxassetid://87372447687978",
             Author = "Block spin",
             Folder = "ERROR_HUB",
             Size = UDim2.fromOffset(400, 200),
@@ -99,7 +99,7 @@ if not isMobile then -- ซ่อน OpenIcon บนมือถือ
     IconImage.Size = UDim2.new(1, 0, 1, 0)
     IconImage.Position = UDim2.new(0, 0, 0, 0)
     IconImage.BackgroundTransparency = 1
-    IconImage.Image = "rbxassetid://115067468878268"
+    IconImage.Image = "rbxassetid://873724476879"
     IconImage.Parent = OpenIcon
     -- ให้รูปภาพโค้งเหมือนปุ่ม
     IconCorner.CornerRadius = UDim.new(0, 8)
@@ -1989,6 +1989,7 @@ local FistsToggle =
     Tab:Toggle(
     {
         Title = "Fists In Car",
+        Desc = "ต่อยในรถได้",
         Default = false,
         Callback = function(state)
             if state then
@@ -2042,6 +2043,7 @@ local HitAuraToggle =
     Tab:Toggle(
     {
         Title = "Hit aura",
+        Desc = "ทำดาเมจรอบๆ(ถืออาวุธก่อน)",
         Default = false,
         Callback = function(state)
             hookEnabled = state
@@ -2055,6 +2057,7 @@ local FastShootButton =
     Tab_mods:Button(
     {
         Title = "Fast Shoot (No Recoil)",
+        Desc = "ยิงเร็ว",
         Default = false,
         Callback = function()
             local player = Players.LocalPlayer
@@ -2122,6 +2125,7 @@ local BoxESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Box ESP",
+        Desc = "บล็อก4เหลี่ยมที่คนอื่น",
         Default = false,
         Callback = function(state)
             boxESPEnabled = state
@@ -2133,6 +2137,7 @@ local NameESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Name ESP",
+        Desc = "มองชื่อ",
         Default = false,
         Callback = function(state)
             nameESPEnabled = state
@@ -2144,6 +2149,7 @@ local HealthESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Health ESP",
+        Desc = "มองเลือด",
         Default = false,
         Callback = function(state)
             healthESPEnabled = state
@@ -2155,6 +2161,7 @@ local HighlightToggle =
     Tab_ESP:Toggle(
     {
         Title = "Highlight",
+        Desc = "ไฮไลท์ตัวผู้เล่นคนอื่น",
         Default = false,
         Callback = function(state)
             highlightEnabled = state
@@ -2205,6 +2212,7 @@ local ItemsESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Items ESP",
+        Desc = "ดูของ",
         Default = false,
         Callback = function(state)
             ESPEnabled = state
@@ -2435,6 +2443,7 @@ local AutoSprintToggle =
     Tab_Character:Toggle(
     {
         Title = "Infinite Stamina",
+        Desc = "สตามมิน่าไม่จำกัด",
         Default = false,
         Callback = function(state)
             AutoSprintEnabled = state
@@ -2564,6 +2573,7 @@ local AntiKillToggle =
     Tab_Character:Toggle(
     {
         Title = "Anti Kill",
+        Desc = "กันตาย",
         Default = false,
         Callback = function(state)
             enabled = state
@@ -2610,6 +2620,7 @@ local PickupToggle =
     Tab_Character:Toggle(
     {
         Title = "Pickup items",
+        Desc = "ดูดของ",
         Default = false,
         Callback = function(state)
             sucking = state
@@ -2621,6 +2632,7 @@ local AntiRagdollToggle =
     Tab_Character:Toggle(
     {
         Title = "Anti Ragdoll",
+        Desc = "กันกระเดน",
         Default = false,
         Callback = function(state)
             local _AntiRagdollEnabled = state
@@ -2671,6 +2683,7 @@ local HideNameToggle =
     Tab_Character:Toggle(
     {
         Title = "Hide Name",
+        Desc = "ปิดชื่อ",
         Default = false,
         Callback = function(state)
             pcall(
@@ -2695,6 +2708,7 @@ local AutoRespawnToggle =
     Tab_Character:Toggle(
     {
         Title = "Auto Respawn",
+        Desc = "ออโต้เกิดใหม่",
         Default = false,
         Callback = function(state)
             local _AutoRespawnEnabled = state
@@ -2749,6 +2763,7 @@ local SnapToggle =
     Tab_Character:Toggle(
     {
         Title = "Snap Under Map",
+        Desc = "มุดดิน",
         Default = false,
         Callback = function(state)
             featureEnabled = state
@@ -2905,6 +2920,7 @@ local ClaimAllQuestButton =
     Tab_misc:Button(
     {
         Title = "Claim All Quest",
+        Desc = "รับของรางวัลเควสทั้งหมด",
         Callback = function()
             task.spawn(
                 function()
@@ -2995,3 +3011,4 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
