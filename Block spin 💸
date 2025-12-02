@@ -2341,9 +2341,8 @@ Dropped.ChildAdded:Connect(function(obj)
     end
 end)
 
-Tab_ESP:Section({Title = "ESP:"})
 
-local ESPDropItems_Toggle = Tab_ESP:Toggle({
+local DroppedItems ESP = Tab_ESP:Toggle({
     Title = "DroppedItems ESP",
     Desc = "ดูไอเท็มที่ตกพื้น",
     Default = false,
@@ -3246,4 +3245,5 @@ ServerTab:Button({
         end
     end
 })
+
 
