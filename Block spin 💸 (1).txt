@@ -2324,9 +2324,7 @@ local SpeedSlider =
     }
 )
 myConfig:Register("SpeedMultiplier", SpeedSlider)
---=========================
---        FLY SYSTEM
---=========================
+
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -2339,70 +2337,6 @@ local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 local FlyEnabled = false
 local isFlyingUp = false
 local jumpPower = 40
-
-local JumpPowerToggle = Tab_Character:Toggle({
-    Title = "Jump Power",
-    Desc = "กระโดดสูง",
-    Default = false,
-    Callback = function(state)
-        FlyEnabled = state
-    end
-})
-myConfig:Register("JumpPowerToggle", JumpPowerToggle)
-
-local JumpSlide = Tab_Character:Slider({
-    Title = "Jump Slide",
-    Desc = "ปรับความสูง",
-    Step = 1,
-    Value = {
-        Min = 20,
-        Max = 200,
-        Default = jumpPower
-    },
-    Callback = function(value)
-        jumpPower = tonumber(value) or 40
-    end
-})
-myConfig:Register("JumpSlide", JumpSlide)
-
--- Fly Logic
-RunService.RenderStepped:Connect(function()
-    if FlyEnabled and HumanoidRootPart then
-        if isFlyingUp then
-            local v = HumanoidRootPart.Velocity
-            HumanoidRootPart.Velocity = Vector3.new(v.X, jumpPower, v.Z)
-        end
-    end
-end)
-
--- PC: Spacebar
-UserInputService.InputBegan:Connect(function(input)
-    if FlyEnabled and input.KeyCode == Enum.KeyCode.Space then
-        isFlyingUp = true
-    end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Space then
-        isFlyingUp = false
-    end
-end)
-
--- Mobile: ใช้ปุ่มกระโดดปกติ
-UserInputService.JumpRequest:Connect(function()
-    if FlyEnabled then
-        isFlyingUp = true
-        task.delay(0.12, function()
-            isFlyingUp = false
-        end)
-    end
-end)
-
--- รีโหลดตัวละคร
-LocalPlayer.CharacterAdded:Connect(function(char)
-    Character = char
-    HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
-end)
 
 -- Leg Sink (ขาจะจมดิน)
 Tab_Character:Divider()
@@ -3231,6 +3165,7 @@ ServerTab:Button({
         end
     end
 })
+
 
 
 
