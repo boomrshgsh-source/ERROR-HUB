@@ -2224,37 +2224,6 @@ local SpeedSlider =
     }
 )
 myConfig:Register("SpeedMultiplier", SpeedSlider)
-local FlyToggle =
-    Tab_Character:Toggle(
-    {
-        Title = "Fly",
-        Default = false,
-        Callback = function(state)
-            FlyEnabled = state
-            if not FlyEnabled then
-                isFlyingUp = false
-            end
-        end
-    }
-)
-myConfig:Register("Fly", FlyToggle)
-
-local FlyPowerSlider =
-    Tab_Character:Slider(
-    {
-        Title = "Fly Power",
-        Step = 1,
-        Value = {
-            Min = 20,
-            Max = 200,
-            Default = floatPower
-        },
-        Callback = function(value)
-            floatPower = tonumber(value) or 40
-        end
-    }
-)
-myConfig:Register("FlyPower", FlyPowerSlider)
 
 -- Leg Sink (ขาจะจมดิน)
 Tab_Character:Divider()
@@ -2934,6 +2903,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
