@@ -1353,23 +1353,43 @@ if not isMobile then
     SilentFOVCircle.Visible = false
 else
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "MobileFOV"
-    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-    SilentFOVCircle = Instance.new("Frame")
-    SilentFOVCircle.Size = UDim2.fromOffset(FOVRadius * 2, FOVRadius * 2)
-    SilentFOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-    SilentFOVCircle.Position = UDim2.fromScale(0.5, 0.5)
-    SilentFOVCircle.BackgroundTransparency = 1
-    local circleUI = Instance.new("UICorner")
-    circleUI.CornerRadius = UDim.new(1, 0)
-    circleUI.Parent = SilentFOVCircle
-    local border = Instance.new("UIStroke")
-    border.Color = Color3.fromRGB(255, 255, 255)
-    border.Thickness = 2 -- Increased thickness for better visibility
-    border.Transparency = 0.2 -- Slightly less transparent for better visibility
-    border.Parent = SilentFOVCircle
-    SilentFOVCircle.Parent = ScreenGui
+ScreenGui.Name = "MobileFOV"
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+SilentFOVCircle = Instance.new("Frame")
+SilentFOVCircle.Size = UDim2.fromOffset(FOVRadius * 2, FOVRadius * 2)
+SilentFOVCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+SilentFOVCircle.Position = UDim2.fromScale(0.5, 0.5) -- อยู่กึ่งกลาง 100%
+SilentFOVCircle.BackgroundTransparency = 1
+
+local circleUI = Instance.new("UICorner")
+circleUI.CornerRadius = UDim.new(1, 0)
+circleUI.Parent = SilentFOVCircle
+
+local border = Instance.new("UIStroke")
+border.Color = Color3.fromRGB(255, 255, 255)
+border.Thickness = 2
+border.Transparency = 0.2
+border.Parent = SilentFOVCircle
+SilentFOVCircle.Parent = ScreenGui
+local RunService = game:GetService("RunService")
+local purple = Color3.fromRGB(170, 0, 255)
+local pink = Color3.fromRGB(255, 0, 170)
+
+local function LerpColor(a, b, t)
+    return Color3.new(
+        a.R + (b.R - a.R) * t,
+        a.G + (b.G - a.G) * t,
+        a.B + (b.B - a.B) * t
+    )
 end
+
+local hue = 0
+RunService.RenderStepped:Connect(function()
+    hue = (hue + 0.01) % 1
+    local alpha = math.abs(math.sin(hue * math.pi * 2))
+    border.Color = LerpColor(purple, pink, alpha)
+end)
 local function isShotgun()
     if not Character then
         return false
@@ -3054,6 +3074,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
