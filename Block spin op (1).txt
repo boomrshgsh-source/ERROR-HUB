@@ -1911,7 +1911,8 @@ myConfig:Register("SilentAim", SilentToggle)
 local GoodGunToggle =
     Tab:Toggle(
     {
-        Title = "SilentAim",
+        Title = "SilentAim | WallBang",
+        Desc = "กระสุนตามหัวกับยิงทะลุ",
         Default = false,
         Callback = function(state)
             GoodGunEnabled = state
@@ -1989,6 +1990,7 @@ local FistsToggle =
     Tab:Toggle(
     {
         Title = "Fists In Car",
+        Desc = "ต่อยในรถได้",
         Default = false,
         Callback = function(state)
             if state then
@@ -2042,6 +2044,7 @@ local HitAuraToggle =
     Tab:Toggle(
     {
         Title = "Hit aura",
+        Desc = "ทำดาเมจรอบๆ(ถืออาวุธก่อน)",
         Default = false,
         Callback = function(state)
             hookEnabled = state
@@ -3143,6 +3146,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
