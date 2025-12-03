@@ -2262,6 +2262,95 @@ local ItemsESPToggle =
     }
 )
 myConfig:Register("ItemsESP", ItemsESPToggle)
+local Dropped = workspace:WaitForChild("DroppedItems")
+local espEnabled = false  -- สถานะเปิด/ปิด ESP
+
+local function findMainPart(obj)
+    if obj:IsA("BasePart") then
+        return obj
+    end
+    for _, v in ipairs(obj:GetDescendants()) do
+        if v:IsA("BasePart") then
+            return v
+        end
+    end
+    return nil
+end
+
+local function createHighlight(item)
+    if not espEnabled then return end
+    if item:FindFirstChild("ESP_Highlight") then return end
+
+    local mainPart = findMainPart(item)
+    if not mainPart then return end
+
+    local hl = Instance.new("Highlight")
+    hl.Name = "ESP_Highlight"
+    hl.Adornee = item
+    hl.Parent = item
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.FillColor = Color3.fromRGB(200, 0, 255)
+    hl.FillTransparency = 0.6
+    hl.OutlineColor = Color3.fromRGB(255, 160, 255)
+    hl.OutlineTransparency = 0.1
+
+    local billboard = Instance.new("BillboardGui")
+    billboard.Name = "ESP_Name"
+    billboard.Size = UDim2.new(0, 100, 0, 20)
+    billboard.AlwaysOnTop = true
+    billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboard.Parent = item
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextScaled = true
+    label.TextColor3 = Color3.fromRGB(255, 200, 255)
+    label.Font = Enum.Font.GothamBold
+    label.Text = item.Name
+    label.Parent = billboard
+end
+
+local function removeHighlight(item)
+    local hl = item:FindFirstChild("ESP_Highlight")
+    local name = item:FindFirstChild("ESP_Name")
+    if hl then hl:Destroy() end
+    if name then name:Destroy() end
+end
+
+local function applyESP()
+    for _, obj in ipairs(Dropped:GetChildren()) do
+        createHighlight(obj)
+    end
+end
+
+local function clearESP()
+    for _, obj in ipairs(Dropped:GetChildren()) do
+        removeHighlight(obj)
+    end
+end
+
+Dropped.ChildAdded:Connect(function(obj)
+    if espEnabled then
+        task.wait(0.1)
+        createHighlight(obj)
+    end
+end)
+
+local ESP_Toggle = Tab_ESP:Toggle({
+    Title = "DroppedItems ESP",
+    Desc = "ดูของที่ตกพื้น",
+    Default = false,
+    Callback = function(state)
+        espEnabled = state
+        if state then
+            applyESP()
+        else
+            clearESP()
+        end
+    end
+})
+
 local Tab_Character = Window:Tab({Title = "CHARACTER:", Icon = "user"})
 Tab_Character:Section({Title = "CHARACTER:"})
 local WalkSpeedToggle =
@@ -3054,6 +3143,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
