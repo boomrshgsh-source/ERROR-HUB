@@ -39,10 +39,10 @@ if WindUI then
     Window =
         WindUI:CreateWindow(
         {
-            Title = "หำ หี HUB🔥🔫 | 0.1z | Premium  ",
+            Title = "ERROR HUB| Block spin |💸",
             Icon = "cloud-lightning",
-            Author = "mo",
-            Folder = "yomo Now",
+            Author = "Block spin",
+            Folder = "ERROR HUB",
             Size = UDim2.fromOffset(400, 200),
             Theme = "Dark",
             Transparent = true,
@@ -2993,4 +2993,5 @@ myConfig:Register("DeleteConfig", DeleteConfigButton)
 -- โหลด Config
 if loadFunc then
     loadFunc(myConfig)
+
 end
