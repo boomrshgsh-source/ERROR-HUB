@@ -2055,6 +2055,7 @@ local FastShootButton =
     Tab_mods:Button(
     {
         Title = "Fast Shoot (No Recoil)",
+        Desc = "ยิงเร็ว",
         Default = false,
         Callback = function()
             local player = Players.LocalPlayer
@@ -2122,6 +2123,7 @@ local BoxESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Box ESP",
+        Desc = "กล่อง4เหลี่ยมที่คนอื่น",
         Default = false,
         Callback = function(state)
             boxESPEnabled = state
@@ -2133,6 +2135,7 @@ local NameESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Name ESP",
+        Desc = "มองชื่อ",
         Default = false,
         Callback = function(state)
             nameESPEnabled = state
@@ -2144,6 +2147,7 @@ local HealthESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Health ESP",
+        Desc = "มองเลือด",
         Default = false,
         Callback = function(state)
             healthESPEnabled = state
@@ -2155,6 +2159,7 @@ local HighlightToggle =
     Tab_ESP:Toggle(
     {
         Title = "Highlight",
+        Desc = "ไฮไลท์ที่ตัวคนอื่น",
         Default = false,
         Callback = function(state)
             highlightEnabled = state
@@ -2205,6 +2210,7 @@ local ItemsESPToggle =
     Tab_ESP:Toggle(
     {
         Title = "Items ESP",
+        Desc = "ดูของ", 
         Default = false,
         Callback = function(state)
             ESPEnabled = state
@@ -2300,10 +2306,6 @@ local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 local FlyEnabled = false
 local isFlyingUp = false
 local jumpPower = 40
-
--- UI Section
-Tab_Character:Section({Title = "Movement: Fly"})
-
 local JumpPowerToggle = Tab_Character:Toggle({
     Title = "Jump Power",
     Desc = "กระโดดสูง",
@@ -2339,7 +2341,7 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- PC: Spacebar เพื่อบินขึ้น
+-- PC: Spacebar 
 UserInputService.InputBegan:Connect(function(input)
     if FlyEnabled and input.KeyCode == Enum.KeyCode.Space then
         isFlyingUp = true
@@ -2352,7 +2354,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Mobile: ใช้ปุ่มกระโดด Roblox ปกติ (JumpRequest)
+-- Mobile: กระโดดปกติ
 UserInputService.JumpRequest:Connect(function()
     if FlyEnabled then
         isFlyingUp = true
@@ -2615,6 +2617,7 @@ local AntiKillToggle =
     Tab_Character:Toggle(
     {
         Title = "Anti Kill",
+        Desc = "กันตาย(ไม่กันโปรที่ยิงทะลุ)",
         Default = false,
         Callback = function(state)
             enabled = state
@@ -2661,6 +2664,7 @@ local PickupToggle =
     Tab_Character:Toggle(
     {
         Title = "Pickup items",
+        Desc = "ดูดของ",
         Default = false,
         Callback = function(state)
             sucking = state
@@ -2672,6 +2676,7 @@ local AntiRagdollToggle =
     Tab_Character:Toggle(
     {
         Title = "Anti Ragdoll",
+        Desc = "กันกระเดน",
         Default = false,
         Callback = function(state)
             local _AntiRagdollEnabled = state
@@ -2722,6 +2727,7 @@ local HideNameToggle =
     Tab_Character:Toggle(
     {
         Title = "Hide Name",
+        Desc = "ปิดชื่อ",
         Default = false,
         Callback = function(state)
             pcall(
@@ -2746,6 +2752,7 @@ local AutoRespawnToggle =
     Tab_Character:Toggle(
     {
         Title = "Auto Respawn",
+        Desc = "ออโต้เกิดใหม่",
         Default = false,
         Callback = function(state)
             local _AutoRespawnEnabled = state
@@ -2800,6 +2807,7 @@ local SnapToggle =
     Tab_Character:Toggle(
     {
         Title = "Snap Under Map",
+        Desc = "มุดดิน",
         Default = false,
         Callback = function(state)
             featureEnabled = state
@@ -3046,6 +3054,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
