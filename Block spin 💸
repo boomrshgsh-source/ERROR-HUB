@@ -2339,44 +2339,45 @@ local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
 
 local FlyEnabled = false
 local isFlyingUp = false
-local flyPower = 40
+local jumpPower = 40
 
-local FlyToggle = Tab_Character:Toggle({
-    Title = "Jump power",
+
+local JumpPowerToggle = Tab_Character:Toggle({
+    Title = "Jump Power",
     Desc = "กระโดดสูง",
     Default = false,
     Callback = function(state)
         FlyEnabled = state
-    end,
+    end
 })
-myConfig:Register("Jump power", Jump power)
+myConfig:Register("JumpPowerToggle", JumpPowerToggle)
 
-local FlyPowerSlider = Tab_Character:Slider({
-    Title = "Jump Slider",
+local JumpSlide = Tab_Character:Slider({
+    Title = "Jump Slide",
     Desc = "ปรับความสูง",
     Step = 1,
     Value = {
         Min = 20,
         Max = 200,
-        Default = flyPower
+        Default = jumpPower
     },
     Callback = function(value)
-        flyPower = tonumber(value) or 40
+        jumpPower = tonumber(value) or 40
     end
 })
-myConfig:Register("Jump Slider", FlyPowerSlider)
+myConfig:Register("JumpSlide", JumpSlide)
 
 -- Fly Logic
 RunService.RenderStepped:Connect(function()
     if FlyEnabled and HumanoidRootPart then
         if isFlyingUp then
             local v = HumanoidRootPart.Velocity
-            HumanoidRootPart.Velocity = Vector3.new(v.X, flyPower, v.Z)
+            HumanoidRootPart.Velocity = Vector3.new(v.X, jumpPower, v.Z)
         end
     end
 end)
 
--- PC: Spacebar 
+-- PC: Spacebar
 UserInputService.InputBegan:Connect(function(input)
     if FlyEnabled and input.KeyCode == Enum.KeyCode.Space then
         isFlyingUp = true
@@ -2389,7 +2390,7 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Mobile:ปุ่มกระโดด
+-- Mobile: ใช้ปุ่มกระโดดปกติ
 UserInputService.JumpRequest:Connect(function()
     if FlyEnabled then
         isFlyingUp = true
@@ -2399,7 +2400,7 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- โหลดตัวละคร
+-- รอโหลดตัวละคร
 LocalPlayer.CharacterAdded:Connect(function(char)
     Character = char
     HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
@@ -3232,6 +3233,7 @@ ServerTab:Button({
         end
     end
 })
+
 
 
 
