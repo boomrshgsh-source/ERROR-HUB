@@ -187,16 +187,12 @@ local excludedPlayerNames = {} -- Table for excluded players
 -- Movement
 local walkSpeedEnabled = false
 local speedValue = 0.05
-local FlyEnabled = false
-local isFlyingUp = false
-local floatPower = 40
 local teleportActive = false
 local featureEnabled = false
 local lockedY = nil
 local maxHeight = 10
 local startY = nil
 local moveConnection = nil
-local flyJumpConnection = nil -- สำหรับมือถือ
 -- Combat/Misc
 local fastFinishEnabled = false
 local hookEnabled = false
@@ -3235,6 +3231,7 @@ ServerTab:Button({
         end
     end
 })
+
 
 
 
