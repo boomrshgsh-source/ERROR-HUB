@@ -187,16 +187,12 @@ local excludedPlayerNames = {} -- Table for excluded players
 -- Movement
 local walkSpeedEnabled = false
 local speedValue = 0.05
-local FlyEnabled = false
-local isFlyingUp = false
-local floatPower = 40
 local teleportActive = false
 local featureEnabled = false
 local lockedY = nil
 local maxHeight = 10
 local startY = nil
 local moveConnection = nil
-local flyJumpConnection = nil -- สำหรับมือถือ
 -- Combat/Misc
 local fastFinishEnabled = false
 local hookEnabled = false
@@ -1679,65 +1675,7 @@ RunService.Heartbeat:Connect(
         pcall(CheckAndPickup)
     end
 )
--- Fly Bind
-ContextActionService:BindAction(
-    "FlyUp",
-    function(actionName, inputState, inputObject)
-        if not FlyEnabled then
-            return Enum.ContextActionResult.Pass
-        end
-        local isJumpPressed = false
-        -- PC: Spacebar
-        if inputObject.UserInputType == Enum.UserInputType.Keyboard and inputObject.KeyCode == Enum.KeyCode.Space then
-            isJumpPressed = true
-        end
-        -- Mobile: ใช้ปุ่ม Jump ของ Roblox
-        if inputObject.UserInputType == Enum.UserInputType.Touch then
-            isJumpPressed = true
-        end
-        if isJumpPressed then
-            if inputState == Enum.UserInputState.Begin then
-                isFlyingUp = true
-                Humanoid.Jump = true -- กระโดดปกติ (มือถือ) หรือเริ่มบิน
-                return Enum.ContextActionResult.Sink
-            elseif inputState == Enum.UserInputState.End then
-                isFlyingUp = false
-                return Enum.ContextActionResult.Sink
-            end
-        end
-        return Enum.ContextActionResult.Pass
-    end,
-    false,
-    Enum.KeyCode.Space
-)
--- =========================
--- Fly Update (ลอยขึ้นต่อเนื่อง)
--- =========================
-RunService.RenderStepped:Connect(
-    function(deltaTime)
-        if FlyEnabled and isFlyingUp then
-            HumanoidRootPart.Velocity =
-                Vector3.new(HumanoidRootPart.Velocity.X, floatPower, HumanoidRootPart.Velocity.Z)
-        end
-    end
-)
--- เพิ่มสำหรับมือถือ: ฟัง Humanoid.Jumping
-LocalPlayer.CharacterAdded:Connect(
-    function(char)
-        local hum = char:WaitForChild("Humanoid")
-        if flyJumpConnection then
-            flyJumpConnection:Disconnect()
-        end
-        flyJumpConnection =
-            hum:GetPropertyChangedSignal("Jumping"):Connect(
-            function()
-                if FlyEnabled and hum.Jumping then
-                    isFlyingUp = true
-                else
-                    isFlyingUp = false
-                end
-            end
-        )
+
         -- Reconnect impact detection when character respawns
         setupCharacter(char)
         connectImpactDetections()
@@ -2386,37 +2324,86 @@ local SpeedSlider =
     }
 )
 myConfig:Register("SpeedMultiplier", SpeedSlider)
-local FlyToggle =
-    Tab_Character:Toggle(
-    {
-        Title = "Fly",
-        Default = false,
-        Callback = function(state)
-            FlyEnabled = state
-            if not FlyEnabled then
-                isFlyingUp = false
-            end
-        end
-    }
-)
-myConfig:Register("Fly", FlyToggle)
 
-local FlyPowerSlider =
-    Tab_Character:Slider(
-    {
-        Title = "Fly Power",
-        Step = 1,
-        Value = {
-            Min = 20,
-            Max = 200,
-            Default = floatPower
-        },
-        Callback = function(value)
-            floatPower = tonumber(value) or 40
+--=========================
+--        FLY SYSTEM
+--=========================
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+local FlyEnabled = false
+local isFlyingUp = false
+local flyPower = 40
+
+local FlyToggle = Tab_Character:Toggle({
+    Title = "Jump power",
+    Desc = "กระโดดสูง",
+    Default = false,
+    Callback = function(state)
+        FlyEnabled = state
+    end,
+})
+myConfig:Register("Jump power", Jump power)
+
+local FlyPowerSlider = Tab_Character:Slider({
+    Title = "Jump Slider",
+    Desc = "ปรับความสูง",
+    Step = 1,
+    Value = {
+        Min = 20,
+        Max = 200,
+        Default = flyPower
+    },
+    Callback = function(value)
+        flyPower = tonumber(value) or 40
+    end
+})
+myConfig:Register("Jump Slider", FlyPowerSlider)
+
+-- Fly Logic
+RunService.RenderStepped:Connect(function()
+    if FlyEnabled and HumanoidRootPart then
+        if isFlyingUp then
+            local v = HumanoidRootPart.Velocity
+            HumanoidRootPart.Velocity = Vector3.new(v.X, flyPower, v.Z)
         end
-    }
-)
-myConfig:Register("FlyPower", FlyPowerSlider)
+    end
+end)
+
+-- PC: Spacebar 
+UserInputService.InputBegan:Connect(function(input)
+    if FlyEnabled and input.KeyCode == Enum.KeyCode.Space then
+        isFlyingUp = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Space then
+        isFlyingUp = false
+    end
+end)
+
+-- Mobile:ปุ่มกระโดด
+UserInputService.JumpRequest:Connect(function()
+    if FlyEnabled then
+        isFlyingUp = true
+        task.delay(0.12, function()
+            isFlyingUp = false
+        end)
+    end
+end)
+
+-- โหลดตัวละคร
+LocalPlayer.CharacterAdded:Connect(function(char)
+    Character = char
+    HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
+end)
 
 -- Leg Sink (ขาจะจมดิน)
 Tab_Character:Divider()
@@ -3245,5 +3232,6 @@ ServerTab:Button({
         end
     end
 })
+
 
 
