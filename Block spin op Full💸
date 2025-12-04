@@ -2502,69 +2502,6 @@ local LegSinkSlider =
 )
 myConfig:Register("LegSinkAmount", LegSinkSlider)
 
--- Combined Anti-Lock + Anti-Aim toggle (user requested to merge into 1)
-local CombinedAntiToggle =
-    Tab_Character:Toggle(
-    {
-        Title = "Anti Lock (Combined)",
-        Desc = "เปิด Anti-Lock (Sky) และ Anti-Aim (spin) ด้วย toggle เดียวกัน",
-        Default = false,
-        Callback = function(state)
-            CombinedAntiLockEnabled = state
-            -- when user manually toggles, also set global Sky to match
-            getgenv().Sky = state
-            if state then
-                -- nothing else required: RunService loop will pick up CombinedAntiLockEnabled
-            else
-                -- clear any temp impact activation
-                _impactActiveUntil = 0
-            end
-        end
-    }
-)
-myConfig:Register("CombinedAntiLock", CombinedAntiToggle)
-
--- Impact-trigger toggle and duration slider
-local ImpactTriggerToggle =
-    Tab_Character:Toggle(
-    {
-        Title = "Trigger On Impact",
-        Desc = "เมื่อโดนชนหรือโดน 'เซ' ให้เปิด Anti-Lock/Anti-Aim ชั่วคราว",
-        Default = true,
-        Callback = function(state)
-            ImpactTriggerEnabled = state
-        end
-    }
-)
-myConfig:Register("ImpactTrigger", ImpactTriggerToggle)
-
-local ImpactDurationSlider =
-    Tab_Character:Slider(
-    {
-        Title = "Impact Duration (s)",
-        Step = 0.5,
-        Value = {Min = 0.5, Max = 10, Default = ImpactTriggerDuration},
-        Callback = function(value)
-            ImpactTriggerDuration = tonumber(value) or 3
-        end
-    }
-)
-myConfig:Register("ImpactDuration", ImpactDurationSlider)
-
--- Anti-Aim Speed slider (still exposed)
-local AntiAimSpeedSlider =
-    Tab_Character:Slider(
-    {
-        Title = "Spin Speed (deg/s)",
-        Step = 10,
-        Value = {Min = 60, Max = 2000, Default = AntiAimSpeed},
-        Callback = function(value)
-            AntiAimSpeed = tonumber(value) or 540
-        end
-    }
-)
-myConfig:Register("AntiAimSpeed", AntiAimSpeedSlider)
-
 -- รอ
 local Net = {}
 function Net.send(...)
@@ -2687,24 +2624,61 @@ local AutoSprintToggle =
     }
 )
 myConfig:Register("AutoSprint", AutoSprintToggle)
-local AntiLockToggle =
-    Tab_Character:Toggle(
-    {
-        Title = "Anti Lock (legacy)",
-        Default = false,
-        Callback = function(state)
-            -- legacy toggle kept for compatibility: will set getgenv().Sky only
-            getgenv().Sky = state
-            if state and not CombinedAntiLockEnabled then
-                -- inform user: combined toggle is recommended
-                if WindUI then
-                    WindUI:Notify({Title = "⚠️ Notice", Description = "Use Combined Anti Lock for unified behavior", Duration = 2})
-                end
-            end
+-----------------------------
+--   Anti Silent Aim  --
+-----------------------------
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local danceTrack = nil
+local DanceEnabled = false
+
+local function startDance()
+    local char = player.Character
+    if not char then return end
+
+    local humanoid = char:WaitForChild("Humanoid")
+    local anim = Instance.new("Animation")
+    anim.AnimationId = "rbxassetid://104767795538635" -- animation เต้นเร็ว
+
+    danceTrack = humanoid:LoadAnimation(anim)
+    danceTrack.Looped = true
+    danceTrack:Play()
+    danceTrack:AdjustSpeed(600) -- ความเร็วเต้น
+end
+
+local function stopDance()
+    if danceTrack then
+        danceTrack:Stop()
+    end
+end
+-- รอตัวครโหลด
+player.CharacterAdded:Connect(function(char)
+    local humanoid = char:WaitForChild("Humanoid")
+
+    humanoid.Died:Connect(stopDance)
+
+    if DanceEnabled then
+        startDance()
+    end
+end)
+
+Tab_Character:Toggle({
+    Title = "Anti Silent Aim",
+    Desc = "กันล็อค",
+    Default = false,
+    Callback = function(state)
+        DanceEnabled = state
+
+        if state then
+            startDance()
+        else
+            stopDance()
         end
-    }
-)
-myConfig:Register("AntiLockLegacy", AntiLockToggle)
+    end
+})
+myConfig:Register("Anti Silent Aim", Anti Silent AimToggle)
 local AntiKillToggle =
     Tab_Character:Toggle(
     {
@@ -3146,6 +3120,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
