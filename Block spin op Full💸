@@ -2625,7 +2625,7 @@ local AutoSprintToggle =
 )
 myConfig:Register("AutoSprint", AutoSprintToggle)
 -----------------------------
---   Anti Silent Aim  --
+--     Anti Silent Aim     --
 -----------------------------
 
 local Players = game:GetService("Players")
@@ -2634,6 +2634,7 @@ local player = Players.LocalPlayer
 local danceTrack = nil
 local DanceEnabled = false
 
+-- ฟังก์ชันเริ่ม
 local function startDance()
     local char = player.Character
     if not char then return end
@@ -2648,12 +2649,14 @@ local function startDance()
     danceTrack:AdjustSpeed(600) -- ความเร็วเต้น
 end
 
+-- ฟังก์ชันหยุด
 local function stopDance()
     if danceTrack then
         danceTrack:Stop()
     end
 end
--- รอตัวครโหลด
+
+-- โหลดตัวละครใหม่เมื่อเกิดใหม่
 player.CharacterAdded:Connect(function(char)
     local humanoid = char:WaitForChild("Humanoid")
 
@@ -2664,21 +2667,25 @@ player.CharacterAdded:Connect(function(char)
     end
 end)
 
+local function AntiSilentAimToggle(state)
+    DanceEnabled = state
+    if state then
+        startDance()
+    else
+        stopDance()
+    end
+end
+
 Tab_Character:Toggle({
     Title = "Anti Silent Aim",
     Desc = "กันล็อค",
     Default = false,
-    Callback = function(state)
-        DanceEnabled = state
-
-        if state then
-            startDance()
-        else
-            stopDance()
-        end
-    end
+    Callback = AntiSilentAimToggle
 })
-myConfig:Register("Anti Silent Aim", Anti Silent AimToggle)
+
+-- บันทึก config
+myConfig:Register("Anti Silent Aim", AntiSilentAimToggle)
+
 local AntiKillToggle =
     Tab_Character:Toggle(
     {
@@ -3120,6 +3127,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
