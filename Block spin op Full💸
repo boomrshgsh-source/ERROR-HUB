@@ -1,99 +1,4 @@
-local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
 
-local WEBHOOK = "https://discord.com/api/webhooks/1447146865979031583/VrS18OLAQGDAEKaQdaVuVSPS-ugw_mDImZxnmENLVeDFMdUMVoj_Zo6MXugoY0coHuYT"
-
--- รายชื่อปืนที่ตรวจ
-local GunNames = {
-    "AK47","M4A1","AWM","Desert Eagle","MP5","Shotgun","Vector","P226","M24","Draco",
-    "Glock","Sawnoff","Uzi","G3","C9","Hunting Rifle","Anaconda","Remington",
-    "Double Barrel","AR-15","Rifle"
-}
-
-local GunLookup = {}
-for _, gun in ipairs(GunNames) do
-    GunLookup[gun] = true
-end
-
-local LastState = {}
-
-local function SendWebhook(msg)
-    local req = http_request or request or (syn and syn.request)
-    if not req then
-        warn("Delta ไม่มี http_request")
-        return
-    end
-
-    req({
-        Url = WEBHOOK,
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json"
-        },
-        Body = HttpService:JSONEncode({
-            username = "ERROR |GUN| 🔫 Test",
-            embeds = {{
-                title = "Gun Status Update",
-                description = msg,
-                color = 16753920
-            }}
-        })
-    })
-end
-
-local function CheckGun(player)
-    for _, v in ipairs(player.Backpack:GetChildren()) do
-        if GunLookup[v.Name] then
-            return v.Name
-        end
-    end
-
-    local char = player.Character
-    if char then
-        for _, v in ipairs(char:GetChildren()) do
-            if v:IsA("Tool") and GunLookup[v.Name] then
-                return v.Name
-            end
-        end
-    end
-
-    return nil
-end
-
-while task.wait(1) do
-    local NewState = {}
-
-    for _, plr in ipairs(Players:GetPlayers()) do
-        local gun = CheckGun(plr)
-        if gun then
-            NewState[plr.UserId] = gun
-        end
-    end
-
-    if HttpService:JSONEncode(NewState) ~= HttpService:JSONEncode(LastState) then
-        
-        if next(NewState) == nil then
-            SendWebhook("📭 ไม่มีใครถือปืนอยู่ตอนนี้")
-        else
-            local lines = {}
-
-            for userId, gun in pairs(NewState) do
-                local plr = Players:GetPlayerByUserId(userId)
-                table.insert(lines,
-                    ("👤 **%s**\n🔫 Gun: **%s**\n🆔 ID: `%s`\n")
-                    :format(plr.Name, gun, userId)
-                )
-            end
-
-            local msg = ("🔫 จำนวนคนถือปืน: **%d**\n\n%s")
-                :format(#lines, table.concat(lines, "\n"))
-
-            SendWebhook(msg)
-        end
-
-        LastState = NewState
-    end
-end
 
 -- =========================
 -- Services
@@ -3232,6 +3137,135 @@ end
 
 
 
+----------------------------------------------------------------
+-- CONFIG
+----------------------------------------------------------------
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1447146865979031583/VrS18OLAQGDAEKaQdaVuVSPS-ugw_mDImZxnmENLVeDFMdUMVoj_Zo6MXugoY0coHuYT"
+local HookName = "ERROR |GUN| 🔫 Test"
+
+-- ลิสต์ปืนแบบไม่มี ""
+local RawGunList = [[
+AK47
+M4A1
+AWM
+Desert Eagle
+MP5
+Shotgun
+Vector
+P226
+M24
+Draco
+Glock
+Sawnoff
+Uzi
+G3
+C9
+Hunting Rifle
+Anaconda
+Remington
+Double Barrel
+AR-15
+Rifle
+]]
+
+----------------------------------------------------------------
+-- Convert raw list → table
+----------------------------------------------------------------
+local Guns = {}
+for gun in RawGunList:gmatch("[^\r\n]+") do
+    gun = gun:gsub("^%s*(.-)%s*$", "%1")
+    if gun ~= "" then
+        table.insert(Guns, gun)
+    end
+end
+
+----------------------------------------------------------------
+-- Services
+----------------------------------------------------------------
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+----------------------------------------------------------------
+-- Helper: Is this item a gun?
+----------------------------------------------------------------
+local function IsGun(name)
+    for _, gun in ipairs(Guns) do
+        if name == gun then
+            return true
+        end
+    end
+    return false
+end
+
+----------------------------------------------------------------
+-- Send Webhook
+----------------------------------------------------------------
+local function SendWebhook(playerName, userId, gunName)
+    local data = {
+        username = HookName,
+        content = "**ตรวจพบอาวุธ!**",
+        embeds = {{
+            title = "ผู้เล่นมีปืน",
+            description = 
+                "**ชื่อ:** "..playerName..
+                "\n**UserId:** "..tostring(userId)..
+                "\n**อาวุธ:** "..gunName,
+            color = 16711680
+        }}
+    }
+
+    local jsonData = HttpService:JSONEncode(data)
+
+    HttpService:PostAsync(WEBHOOK_URL, jsonData)
+end
+
+----------------------------------------------------------------
+-- Track gun state to avoid spam
+----------------------------------------------------------------
+local LastState = {}
+
+----------------------------------------------------------------
+-- Check all players
+----------------------------------------------------------------
+local function ScanPlayers()
+    for _, plr in ipairs(Players:GetPlayers()) do
+        local Backpack = plr:FindFirstChild("Backpack")
+        if not Backpack then continue end
+
+        -- ปืนที่มีตอนนี้
+        local Current = {}
+
+        for _, item in ipairs(Backpack:GetChildren()) do
+            if IsGun(item.Name) then
+                Current[item.Name] = true
+            end
+        end
+
+        -- ถ้ายังไม่มีข้อมูลผู้เล่น ให้ตั้งสถานะเริ่มต้น
+        if not LastState[plr] then
+            LastState[plr] = {}
+        end
+
+        -- เช็กปืนที่เพิ่มเข้ามา
+        for gun in pairs(Current) do
+            if not LastState[plr][gun] then
+                SendWebhook(plr.Name, plr.UserId, gun)
+            end
+        end
+
+        -- อัปเดตสถานะล่าสุด
+        LastState[plr] = Current
+    end
+end
+
+----------------------------------------------------------------
+-- Run loop
+----------------------------------------------------------------
+task.spawn(function()
+    while task.wait(1) do
+        ScanPlayers()
+    end
+end)
 
 
 
