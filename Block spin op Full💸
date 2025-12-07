@@ -1,3 +1,100 @@
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+
+local WEBHOOK = "https://discord.com/api/webhooks/1447146865979031583/VrS18OLAQGDAEKaQdaVuVSPS-ugw_mDImZxnmENLVeDFMdUMVoj_Zo6MXugoY0coHuYT"
+
+-- รายชื่อปืนที่ตรวจ
+local GunNames = {
+    "AK47","M4A1","AWM","Desert Eagle","MP5","Shotgun","Vector","P226","M24","Draco",
+    "Glock","Sawnoff","Uzi","G3","C9","Hunting Rifle","Anaconda","Remington",
+    "Double Barrel","AR-15","Rifle"
+}
+
+local GunLookup = {}
+for _, gun in ipairs(GunNames) do
+    GunLookup[gun] = true
+end
+
+local LastState = {}
+
+local function SendWebhook(msg)
+    local req = http_request or request or (syn and syn.request)
+    if not req then
+        warn("Delta ไม่มี http_request")
+        return
+    end
+
+    req({
+        Url = WEBHOOK,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = HttpService:JSONEncode({
+            username = "ERROR |GUN| 🔫 Test",
+            embeds = {{
+                title = "Gun Status Update",
+                description = msg,
+                color = 16753920
+            }}
+        })
+    })
+end
+
+local function CheckGun(player)
+    for _, v in ipairs(player.Backpack:GetChildren()) do
+        if GunLookup[v.Name] then
+            return v.Name
+        end
+    end
+
+    local char = player.Character
+    if char then
+        for _, v in ipairs(char:GetChildren()) do
+            if v:IsA("Tool") and GunLookup[v.Name] then
+                return v.Name
+            end
+        end
+    end
+
+    return nil
+end
+
+while task.wait(1) do
+    local NewState = {}
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        local gun = CheckGun(plr)
+        if gun then
+            NewState[plr.UserId] = gun
+        end
+    end
+
+    if HttpService:JSONEncode(NewState) ~= HttpService:JSONEncode(LastState) then
+        
+        if next(NewState) == nil then
+            SendWebhook("📭 ไม่มีใครถือปืนอยู่ตอนนี้")
+        else
+            local lines = {}
+
+            for userId, gun in pairs(NewState) do
+                local plr = Players:GetPlayerByUserId(userId)
+                table.insert(lines,
+                    ("👤 **%s**\n🔫 Gun: **%s**\n🆔 ID: `%s`\n")
+                    :format(plr.Name, gun, userId)
+                )
+            end
+
+            local msg = ("🔫 จำนวนคนถือปืน: **%d**\n\n%s")
+                :format(#lines, table.concat(lines, "\n"))
+
+            SendWebhook(msg)
+        end
+
+        LastState = NewState
+    end
+end
+
 -- =========================
 -- Services
 -- =========================
@@ -3127,6 +3224,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
