@@ -70,9 +70,9 @@ else
 end
 
 local data = {
-    username = "ERROR HUB",
+    username = "😋",
     embeds = {{
-        title = "🌌ERROR HUB(allmap ถูกใช้งาน)",
+        title = "Block spin",
         color = color,
         thumbnail = { url = avatarUrl },
         image = { url = mapThumbnail },
@@ -3228,6 +3228,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
