@@ -1,4 +1,6 @@
-
+keypress(Enum.KeyCode.U)
+wait(0.05)
+keyrelease(Enum.KeyCode.U)
 
 
 -- =========================
@@ -1396,86 +1398,74 @@ if Remote and Remote.FireServer then
         oldFire = hookfunction(Remote.FireServer, function(self, ...)
             if self ~= Remote then return oldFire(self, ...) end
             local args = {...}
-            
+
             if (SilentAimEnabled or GoodGunEnabled) and args[2] == "shoot_gun" and CurrentTarget then
-                local head = CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("Head")
-                local hrp = CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
-                local humanoid = CurrentTarget.Character:FindFirstChild("Humanoid")
+                local character = CurrentTarget.Character
+                local head = character and character:FindFirstChild("Head")
+                local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                local humanoid = character and character:FindFirstChild("Humanoid")
                 
                 if head and humanoid and hrp and humanoid.Health > 0 then
                     local aimPos = predictPosition(head, hrp)
                     local myHead = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Head")
                     
                     if myHead then
-                        -- ตรวจสอบว่าเป้าหมายอยู่หลังกำแพงหรือไม่
-                        local isTargetBehindWall = isBehindWall(myHead.Position, aimPos)
                         
-                        -- ระบบฉลาด: ถ้าอยู่หลังกำแพงและเปิด GoodGun ให้ยิงทะลุ, ถ้าอยู่ด้านหน้าก็ยิงปกติ
-                        if GoodGunEnabled and isTargetBehindWall then
-                            -- โหมดยิงทะลุกำแพง
-                            args[4] = CFrame.new(math.huge, math.huge, math.huge)
-                            args[5] = {
+                        args[4] = CFrame.new(
+                            1/0, 1/0, 1/0,
+                            0/0, 0/0, 0/0,
+                            0/0, 0/0, 0/0,
+                            0/0, 0/0, 0/0
+                        )
+
+                        args[5] = {
+                            [1] = {
                                 [1] = {
-                                    [1] = {
-                                        ["Instance"] = head,
-                                        ["Normal"] = Vector3.new(0, 1, 0),
-                                        ["Position"] = aimPos
-                                    }
+                                    ["Instance"] = head,
+                                    ["Position"] = aimPos
                                 }
                             }
-                        else
-                            -- โหมดยิงปกติ (ไม่ทะลุกำแพง)
-                            args[4] = CFrame.new(LocalPlayer.Character.Head.Position, aimPos)
-                            args[5] = {
-                                [1] = {
-                                    [1] = {
-                                        ["Instance"] = head,
-                                        ["Normal"] = Vector3.new(0, 1, 0),
-                                        ["Position"] = aimPos
-                                    }
-                                }
-                            }
-                        end
+                        }
 
                         -- เอฟเฟกต์กระสุน
-                        local myPos = LocalPlayer.Character.Head.Position
-                        local success, beam = pcall(function()
+                        pcall(function()
                             local part = Instance.new("Part")
                             part.Anchored = true
                             part.CanCollide = false
-                            part.Size = Vector3.new(0.15, 0.15, (aimPos - myPos).Magnitude)
-                            part.CFrame = CFrame.new(myPos, aimPos) * CFrame.new(0, 0, -part.Size.Z / 2)
+                            part.Size = Vector3.new(0.15, 0.15, (aimPos - myHead.Position).Magnitude)
+                            part.CFrame = CFrame.new(myHead.Position, aimPos) * CFrame.new(0, 0, -part.Size.Z / 2)
                             part.Material = Enum.Material.Neon
                             part.Transparency = 0.25
-                            part.Color = (GoodGunEnabled and isTargetBehindWall) and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 50, 50)
+                            part.Color = Color3.fromRGB(255, 0, 255) -- ชมพู neon
                             part.Parent = Workspace
                             Debris:AddItem(part, 4)
-                            return part
                         end)
 
-                        -- เอฟเฟกต์เมื่อยิงโดน
+                        -- เอฟเฟกต์เมื่อยิงโดน สีแดง
                         spawn(function()
                             wait(0.1)
-                            if humanoid and humanoid.Health < humanoid.MaxHealth then
-                                -- เอฟเฟกต์ยิงโดน
-                                for _, part in ipairs(CurrentTarget.Character:GetDescendants()) do
-                                    if part:IsA("BasePart") then
-                                        local box = Instance.new("Part")
-                                        box.Size = part.Size + Vector3.new(0.05, 0.05, 0.05)
-                                        box.CFrame = part.CFrame
-                                        box.Anchored = true
-                                        box.CanCollide = false
-                                        box.Material = Enum.Material.Neon
-                                        box.Color = (GoodGunEnabled and isTargetBehindWall) and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(128, 0, 128)
-                                        box.Transparency = 0.5
-                                        box.Parent = Workspace
-                                        local tweenInfo = TweenInfo.new(1.5, Enum.EasingStyle.Linear)
-                                        TweenService:Create(box, tweenInfo, {Transparency = 1}):Play()
-                                        Debris:AddItem(box, 2)
+                            if humanoid and humanoid.Parent and humanoid.Health > 0 and humanoid.Health < humanoid.MaxHealth then
+                                if character then
+                                    for _, part in ipairs(character:GetDescendants()) do
+                                        if part:IsA("BasePart") then
+                                            local box = Instance.new("Part")
+                                            box.Size = part.Size + Vector3.new(0.05, 0.05, 0.05)
+                                            box.CFrame = part.CFrame
+                                            box.Anchored = true
+                                            box.CanCollide = false
+                                            box.Material = Enum.Material.Neon
+                                            box.Color = Color3.fromRGB(255, 0, 0) -- แดง neon
+                                            box.Transparency = 0.5
+                                            box.Parent = Workspace
+                                            local tweenInfo = TweenInfo.new(1.5, Enum.EasingStyle.Linear)
+                                            TweenService:Create(box, tweenInfo, {Transparency = 1}):Play()
+                                            Debris:AddItem(box, 2)
+                                        end
                                     end
                                 end
                             end
                         end)
+
                     end
                 end
             end
@@ -3131,6 +3121,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
