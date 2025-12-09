@@ -1,8 +1,4 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
-local Players, RunService, Camera, LocalPlayer, Mouse, UIS =
-    game:GetService("Players"), game:GetService("RunService"),
-    workspace.CurrentCamera, game.Players.LocalPlayer, game.Players.LocalPlayer:GetMouse(),
-    game:GetService("UserInputService")
 
 local Window = WindUI:CreateWindow({
     Title = "ERROR HUB | FERR | ☄️",
