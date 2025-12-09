@@ -1,4 +1,6 @@
-
+getgenv().identifyexecutor = nil
+_G.identifyexecutor = nil
+identifyexecutor = nil
 
 
 -- =========================
@@ -3119,6 +3121,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
