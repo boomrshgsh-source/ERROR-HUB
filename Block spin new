@@ -1,0 +1,18 @@
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local Players, RunService, Camera, LocalPlayer, Mouse, UIS =
+    game:GetService("Players"), game:GetService("RunService"),
+    workspace.CurrentCamera, game.Players.LocalPlayer, game.Players.LocalPlayer:GetMouse(),
+    game:GetService("UserInputService")
+
+local Window = WindUI:CreateWindow({
+    Title = "ERROR HUB | FERR | ☄️",
+    Icon = "Game"
+    Author = "",
+    Folder = "ERRORxHUB",
+    Size = UDim2.fromOffset(450, 300),
+    Theme = "Dark",
+    Transparent = true,
+    Resizable = true,
+})
+
+local Tab = Window:Tab({Title = "Main", Icon = "crosshair"})
