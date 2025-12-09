@@ -1,6 +1,4 @@
-keypress(Enum.KeyCode.U)
-wait(0.05)
-keyrelease(Enum.KeyCode.U)
+
 
 
 -- =========================
@@ -3121,6 +3119,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
