@@ -72,7 +72,7 @@ end
 local data = {
     username = "ERROR HUB",
     embeds = {{
-        title = "🌌ERROR HUB Block spin",
+        title = "🌌ERROR HUB Block spin new ",
         color = color,
         thumbnail = { url = avatarUrl },
         image = { url = mapThumbnail },
