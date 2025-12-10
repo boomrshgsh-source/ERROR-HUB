@@ -72,7 +72,7 @@ end
 local data = {
     username = "ERROR HUB",
     embeds = {{
-        title = "🌌ERROR HUB(allmap ถูกใช้งาน)",
+        title = "🌌ERROR HUB Block spin",
         color = color,
         thumbnail = { url = avatarUrl },
         image = { url = mapThumbnail },
@@ -434,7 +434,7 @@ end)
 -- =========================
 -- UI Creation
 -- =========================
-local Tab = Window:Tab({Title = "COMBAT:", Icon = "crosshair"})
+local Tab = Window:Tab({Title = "COMBAT", Icon = "crosshair"})
 
 local SilentToggle = Tab:Toggle({
     Title = "Silent Aim | wallbang ",
@@ -507,3 +507,154 @@ Players.PlayerRemoving:Connect(function(player)
         excludedPlayersUI[player] = nil
     end
 end)
+
+-- HIT AURA ทำดาเมจรอบๆ
+
+local hookEnabled = false
+local scanRadius = 15
+local scanInterval = 1
+local running = false
+
+local function getPlayersInRange(radius)
+    local inRange = {}
+    local char = LocalPlayer.Character
+    if not char or not char.PrimaryPart then return inRange end
+    
+    local pos = char.PrimaryPart.Position
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character.PrimaryPart then
+            local ok, mag = pcall(function()
+                return (player.Character.PrimaryPart.Position - pos).Magnitude
+            end)
+            if ok and mag and mag <= radius then
+                table.insert(inRange, player)
+            end
+        end
+    end
+    return inRange
+end
+
+local function getActiveTool()
+    local char = LocalPlayer and LocalPlayer.Character
+    if char then
+        for _, item in ipairs(char:GetChildren()) do
+            if item:IsA("Tool") then
+                return item
+            end
+        end
+    end
+    return nil
+end
+
+local function AttackNearby()
+    if not Remote then return end
+    
+    local char = LocalPlayer.Character
+    if not char or not char.PrimaryPart then return end
+    
+    local tool = getActiveTool()
+    if not tool then return end
+    
+    local targets = getPlayersInRange(scanRadius)
+    for _, target in pairs(targets) do
+        if target and target.Character and target.Character.PrimaryPart then
+            local localPos = LocalPlayer.Character.PrimaryPart.Position
+            local enemyPos = target.Character.PrimaryPart.Position
+            local lookAtCFrame = CFrame.lookAt(localPos, enemyPos)
+            
+            local args = {
+                "melee_attack",
+                tool,
+                {target},
+                lookAtCFrame,
+                0.75
+            }
+            pcall(function() 
+                CallRemote(Remote, unpack(args))
+            end)
+        end
+    end
+end
+
+local function StartAutoAttack()
+    if running then return end
+    running = true
+    
+    task.spawn(function()
+        while running do
+            task.wait(scanInterval)
+            if hookEnabled and LocalPlayer.Character then
+                pcall(AttackNearby)
+            end
+        end
+    end)
+end
+
+local function StopAutoAttack()
+    running = false
+end
+
+-- ฮิตออร่า
+local HitAuraToggle = Tab:Toggle({
+    Title = "Hit Aura",
+    Desc = "ดึงทำดาเมจรอบๆ",
+    Default = false,
+    Callback = function(state)
+        hookEnabled = state
+        if state then
+            StartAutoAttack()
+        else
+            StopAutoAttack()
+        end
+    end
+})
+
+-- FISTS IN CAR  ต่อยในรถ
+
+local FistsInCarToggle = Tab:Toggle({
+    Title = "Fists In Car",
+    Desc = "ต่อยในรถได้",
+    Default = false,
+    Callback = function(state)
+        if state then
+            local function fixFists(fists)
+                if fists and fists:IsA("Tool") then
+                    if fists:GetAttribute("Disabled") then
+                        fists:SetAttribute("Disabled", false)
+                    end
+                    if fists:GetAttribute("DisableInVehicle") then
+                        fists:SetAttribute("DisableInVehicle", false)
+                    end
+                end
+            end
+                        
+            local backpack = LocalPlayer:WaitForChild("Backpack")
+            for _, v in ipairs(backpack:GetChildren()) do
+                if v.Name == "Fists" then
+                    fixFists(v)
+                end
+            end
+                        
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            for _, v in ipairs(character:GetChildren()) do
+                if v.Name == "Fists" then
+                    fixFists(v)
+                end
+            end
+                        
+            LocalPlayer.CharacterAdded:Connect(function(char)
+                task.wait(1)
+                for _, v in ipairs(char:GetChildren()) do
+                    if v.Name == "Fists" then
+                        fixFists(v)
+                    end
+                end
+            end)
+        end
+    end
+})
+-- คอนฟิค2ฟังชั่น
+if myConfig then
+    myConfig:Register("HitAura", HitAuraToggle)
+    myConfig:Register("FistsInCar", FistsInCarToggle)
+end
