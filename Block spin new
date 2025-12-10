@@ -435,11 +435,10 @@ end)
 -- UI Creation
 -- =========================
 local Tab = Window:Tab({Title = "COMBAT:", Icon = "crosshair"})
-Tab:Section({Title = "GUN:"})
 
 local SilentToggle = Tab:Toggle({
-    Title = "Silent Aim",
-    Desc = "เปิด/ปิด Silent Aim",
+    Title = "Silent Aim | wallbang ",
+    Desc = "ล็อคหัวกับยิงทะลุ",
     Default = false,
     Callback = function(state)
         SilentAimEnabled = state
@@ -466,7 +465,7 @@ myConfig:Register("FOVRadius", FOVSlider)
 
 local ShowFOVToggle = Tab:Toggle({
     Title = "Show FOV",
-    Desc = "แสดงวง FOV",
+    Desc = "แสดงวงFOV",
     Default = ShowFOV,
     Callback = function(state)
         ShowFOV = state
