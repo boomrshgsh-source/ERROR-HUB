@@ -33,13 +33,7 @@ local isMobile = UserInputService.TouchEnabled and not UserInputService.Keyboard
 local WindUI = nil
 pcall(
     function()
-        Version = "1.6.53"
-        WindUI =
-            loadstring(
-            game:HttpGet("https://github.com/Footagesus/WindUI/releases/download/" .. Version .. "/main.lua")
-        )()
-    end
-)
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 local Window
 if WindUI then
     Window =
@@ -3040,6 +3034,7 @@ if loadFunc then
     loadFunc(myConfig)
 
 end
+
 
 
 
