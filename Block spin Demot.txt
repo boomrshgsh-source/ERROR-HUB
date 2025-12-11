@@ -684,3 +684,233 @@ local AutoSprintToggle =
 )
 myConfig:Register("AutoSprint", AutoSprintToggle)
 
+
+------------------------------------------------------------------
+-- 3D BOX ESP (ทั้งหมดรวมในไฟล์เดียว)
+------------------------------------------------------------------
+
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local runService = game:GetService("RunService")
+local camera = workspace.CurrentCamera
+
+-- Colors based on health
+local function getHealthColor(health, maxHealth)
+    if not health or not maxHealth or maxHealth <= 0 then
+        return Color3.fromRGB(255, 255, 255)
+    end
+    local percentage = health / maxHealth
+    if percentage >= 0.7 then
+        return Color3.fromRGB(0, 255, 0)
+    elseif percentage >= 0.4 then
+        return Color3.fromRGB(255, 255, 0)
+    else
+        return Color3.fromRGB(255, 0, 0)
+    end
+end
+
+-- ESP instance
+local ESP = {}
+ESP.__index = ESP
+
+function ESP.new(player)
+    local self = setmetatable({}, ESP)
+
+    self.player = player
+    self.character = nil
+    self.humanoid = nil
+    self.rootPart = nil
+
+    self.lines = {}
+    for i = 1, 12 do
+        local line = Drawing.new("Line")
+        line.Thickness = 2
+        line.Visible = false
+        table.insert(self.lines, line)
+    end
+
+    self:setupCharacterListeners()
+    return self
+end
+
+function ESP:setupCharacterListeners()
+    self.characterAddedConnection = self.player.CharacterAdded:Connect(function(character)
+        self:onCharacterAdded(character)
+    end)
+    self.characterRemovingConnection = self.player.CharacterRemoving:Connect(function()
+        self:onCharacterRemoving()
+    end)
+
+    if self.player.Character then
+        self:onCharacterAdded(self.player.Character)
+    end
+end
+
+function ESP:onCharacterAdded(character)
+    self.character = character
+    self.humanoid = character:WaitForChild("Humanoid")
+    self.rootPart = character:WaitForChild("HumanoidRootPart")
+
+    self.humanoidDiedConnection = self.humanoid.Died:Connect(function()
+        self:onCharacterDeath()
+    end)
+end
+
+function ESP:onCharacterRemoving()
+    self:hideESP()
+    self.character = nil
+    self.humanoid = nil
+    self.rootPart = nil
+end
+
+function ESP:onCharacterDeath()
+    self:hideESP()
+end
+
+function ESP:hideESP()
+    for _, line in ipairs(self.lines) do
+        line.Visible = false
+    end
+end
+
+function ESP:update()
+    if not self.player or self.player == localPlayer then
+        self:hideESP()
+        return
+    end
+    if not self.character or not self.humanoid or not self.rootPart then
+        self:hideESP()
+        return
+    end
+    if self.humanoid.Health <= 0 then
+        self:hideESP()
+        return
+    end
+
+    local color = getHealthColor(self.humanoid.Health, self.humanoid.MaxHealth)
+    local cf = self.rootPart.CFrame
+    local size = Vector3.new(3, 6, 3)
+    local halfSize = size / 2
+
+    local corners = {
+        cf * CFrame.new(-halfSize.X, -halfSize.Y, -halfSize.Z),
+        cf * CFrame.new(halfSize.X, -halfSize.Y, -halfSize.Z),
+        cf * CFrame.new(halfSize.X, halfSize.Y, -halfSize.Z),
+        cf * CFrame.new(-halfSize.X, halfSize.Y, -halfSize.Z),
+        cf * CFrame.new(-halfSize.X, -halfSize.Y, halfSize.Z),
+        cf * CFrame.new(halfSize.X, -halfSize.Y, halfSize.Z),
+        cf * CFrame.new(halfSize.X, halfSize.Y, halfSize.Z),
+        cf * CFrame.new(-halfSize.X, halfSize.Y, halfSize.Z),
+    }
+
+    local screenCorners = {}
+    for i, corner in ipairs(corners) do
+        local pos, vis = camera:WorldToViewportPoint(corner.Position)
+        screenCorners[i] = {pos = Vector2.new(pos.X, pos.Y), visible = vis}
+    end
+
+    local edges = {
+        {1,2},{2,3},{3,4},{4,1},
+        {5,6},{6,7},{7,8},{8,5},
+        {1,5},{2,6},{3,7},{4,8}
+    }
+
+    for i, edge in ipairs(edges) do
+        local p1 = screenCorners[edge[1]]
+        local p2 = screenCorners[edge[2]]
+        local line = self.lines[i]
+
+        if p1.visible and p2.visible then
+            line.From = p1.pos
+            line.To = p2.pos
+            line.Color = color
+            line.Visible = true
+        else
+            line.Visible = false
+        end
+    end
+end
+
+function ESP:destroy()
+    if self.characterAddedConnection then self.characterAddedConnection:Disconnect() end
+    if self.characterRemovingConnection then self.characterRemovingConnection:Disconnect() end
+    if self.humanoidDiedConnection then self.humanoidDiedConnection:Disconnect() end
+
+    for _, line in ipairs(self.lines) do
+        line:Remove()
+    end
+end
+
+------------------------------------------------------------------
+-- ESP Manager
+------------------------------------------------------------------
+
+local ESPManager = {
+    instances = {},
+    enabled = false
+}
+
+function ESPManager:init()
+    for _, player in ipairs(players:GetPlayers()) do
+        if player ~= localPlayer then
+            self:addPlayer(player)
+        end
+    end
+
+    players.PlayerAdded:Connect(function(player)
+        if player ~= localPlayer then
+            self:addPlayer(player)
+        end
+    end)
+
+    players.PlayerRemoving:Connect(function(player)
+        self:removePlayer(player)
+    end)
+
+    runService.RenderStepped:Connect(function()
+        if not self.enabled then return end
+        for player, esp in pairs(self.instances) do
+            esp:update()
+        end
+    end)
+end
+
+function ESPManager:addPlayer(player)
+    self.instances[player] = ESP.new(player)
+end
+
+function ESPManager:removePlayer(player)
+    if self.instances[player] then
+        self.instances[player]:destroy()
+        self.instances[player] = nil
+    end
+end
+
+function ESPManager:Enable()
+    self.enabled = true
+end
+
+function ESPManager:Disable()
+    self.enabled = false
+    for _, esp in pairs(self.instances) do
+        esp:hideESP()
+    end
+end
+
+ESPManager:init()
+
+
+local ESPTab = Window:Tab({Title = "☄️ESP", Icon = ""})
+
+ESPTab:Toggle({
+    Title = "ESP Box",
+    Desc = "กล่องสีเหลี่ยม",
+    Default = false,
+    Callback = function(state)
+        if state then
+            ESPManager:Enable()
+        else
+            ESPManager:Disable()
+        end
+    end
+})
