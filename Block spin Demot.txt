@@ -916,24 +916,26 @@ ESPTab:Toggle({
 })
 
 -- ===========================================
--- SIMPLE HEALTH ESP (USING EXISTING ESPTab)
+-- SIMPLE HEALTH ESP (FINAL COMBINED VERSION)
 -- ===========================================
 
-local SimpleHealthESP_Enabled = false
-local SimpleHealthESP_Data = {} -- เก็บ Drawing ของผู้เล่น
 
--- ฟังก์ชันเลือกสีตามเปอร์เซ็นต์เลือด
+
+local SimpleHealthESP_Enabled = false
+local SimpleHealthESP_Data = {}
+
+-- สีตาม Hex ที่คุณต้องการ
 local function GetHealthColor(p)
     if p > 0.6 then
-        return Color3.fromRGB(0, 255, 0)
+        return Color3.fromRGB(0, 255, 0) -- #00FF00
     elseif p > 0.3 then
-        return Color3.fromRGB(255, 255, 0)
+        return Color3.fromRGB(255, 255, 0) -- #FFFF00
     else
-        return Color3.fromRGB(255, 0, 0)
+        return Color3.fromRGB(255, 0, 0) -- #FF0000
     end
 end
 
--- สร้าง ESP ให้ผู้เล่น
+-- เพิ่ม ESP ให้ผู้เล่น
 local function AddHealthESP(player)
     if player == LocalPlayer then return end
     if SimpleHealthESP_Data[player] then return end
@@ -994,25 +996,26 @@ local function AddHealthESP(player)
         local percent = hum.Health / hum.MaxHealth
         local color = GetHealthColor(percent)
 
+        -- ลดความสูงของแทบ HP ลง
         local width = 65
-        local height = 6
+        local height = 4      -- <<< ลดจาก 6 เหลือ 4
         local x = pos.X - width/2
-        local y = pos.Y - 32
+        local y = pos.Y - 28  -- <<< ลดให้ลงมาใกล้หัวมากขึ้น
 
-        -- background
+        -- BG
         bg.Size = Vector2.new(width, height)
         bg.Position = Vector2.new(x, y)
         bg.Visible = true
 
-        -- foreground (HP)
-        fg.Size = Vector2.new(math.max(4, width * percent), height)
+        -- FG (แถบ HP)
+        fg.Size = Vector2.new(math.max(3, width * percent), height)
         fg.Position = Vector2.new(x, y)
         fg.Color = color
         fg.Visible = true
 
-        -- text
+        -- TEXT
         txt.Text = math.floor(hum.Health) .. "/" .. math.floor(hum.MaxHealth)
-        txt.Position = Vector2.new(pos.X, y - 13)
+        txt.Position = Vector2.new(pos.X, y - 12)
         txt.Color = color
         txt.Visible = true
     end)
@@ -1040,7 +1043,7 @@ local function ClearAllHealthESP()
     end
 end
 
--- โหลด ESP ให้ผู้เล่นทุกคน
+-- โหลดผู้เล่นทั้งหมด
 local function LoadPlayers()
     ClearAllHealthESP()
     for _,plr in ipairs(Players:GetPlayers()) do
@@ -1048,13 +1051,14 @@ local function LoadPlayers()
     end
 end
 
+
 -- ===========================================
--- ใส่ Toggle เข้าแท็บ ESPTab ที่มีอยู่แล้ว
+-- ใส่ Toggle เข้า ESPTab ที่คุณมีอยู่แล้ว
 -- ===========================================
 
-local HealthToggle = ESPTab:Toggle({
+local ToggleHealth = ESPTab:Toggle({
     Title = "❤️ Health ESP",
-    Desc = "แสดงเลือดสีสดเหนือหัวผู้เล่น",
+    Desc = "โชว์เลือดสีสด + ลดความสูงแทบ",
     Default = false,
     Callback = function(state)
         SimpleHealthESP_Enabled = state
@@ -1085,9 +1089,8 @@ local HealthToggle = ESPTab:Toggle({
     end
 })
 
--- ถ้าใช้ระบบ Config
 if myConfig then
-    myConfig:Register("SimpleHealthESP", HealthToggle)
+    myConfig:Register("SimpleHealthESP", ToggleHealth)
 end
 
-print("🔥 Simple Health ESP Loaded into ESPTab!")
+print("🔥 Final Simple Health ESP Loaded!")
