@@ -919,8 +919,6 @@ ESPTab:Toggle({
 -- SIMPLE HEALTH ESP (FINAL COMBINED VERSION)
 -- ===========================================
 
-
-
 local SimpleHealthESP_Enabled = false
 local SimpleHealthESP_Data = {}
 
@@ -1055,8 +1053,7 @@ end
 -- ===========================================
 -- ใส่ Toggle เข้า ESPTab ที่คุณมีอยู่แล้ว
 -- ===========================================
-
-local ToggleHealth = ESPTab:Toggle({
+    ESPTab:Toggle({
     Title = "❤️ Health ESP",
     Desc = "โชว์เลือดสีสด + ลดความสูงแทบ",
     Default = false,
@@ -1092,5 +1089,5 @@ local ToggleHealth = ESPTab:Toggle({
 if myConfig then
     myConfig:Register("SimpleHealthESP", ToggleHealth)
 end
-
 print("🔥 Final Simple Health ESP Loaded!")
+
