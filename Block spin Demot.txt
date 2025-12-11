@@ -914,3 +914,249 @@ ESPTab:Toggle({
         end
     end
 })
+
+-- ===========================================
+-- SIMPLE HEALTH ESP - AUTO REFRESH
+-- ===========================================
+-- ระบบแสดงแถบเลือดสีสดอัตโนมัติ
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+-- ตัวแปรระบบ
+local SimpleHealthESP_Enabled = false
+local SimpleHealthESP_Data = {} -- {player = {bg, fg, text, conn}}
+
+-- สีสดตาม % เลือด
+local function GetHealthColor(percent)
+    if percent > 0.6 then
+        return Color3.fromRGB(0, 255, 0) -- เขียวสด
+    elseif percent > 0.3 then
+        return Color3.fromRGB(255, 255, 0) -- เหลืองสด
+    else
+        return Color3.fromRGB(255, 0, 0) -- แดงสด
+    end
+end
+
+-- สร้าง ESP ให้ผู้เล่น
+local function AddPlayerESP(player)
+    if SimpleHealthESP_Data[player] or player == LocalPlayer then return end
+    
+    local bg = Drawing.new("Square")
+    local fg = Drawing.new("Square")
+    local text = Drawing.new("Text")
+    
+    bg.Filled = true
+    bg.Color = Color3.fromRGB(30, 30, 30)
+    bg.Transparency = 0.5
+    bg.Visible = false
+    
+    fg.Filled = true
+    fg.Transparency = 0.2
+    fg.Visible = false
+    
+    text.Size = 13
+    text.Center = true
+    text.Outline = true
+    text.OutlineColor = Color3.fromRGB(0, 0, 0)
+    text.Font = 2
+    text.Visible = false
+    
+    local conn = RunService.RenderStepped:Connect(function()
+        if not SimpleHealthESP_Enabled then
+            bg.Visible = false
+            fg.Visible = false
+            text.Visible = false
+            return
+        end
+        
+        if not player or not player.Character then
+            bg.Visible = false
+            fg.Visible = false
+            text.Visible = false
+            return
+        end
+        
+        local char = player.Character
+        local hum = char:FindFirstChild("Humanoid")
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        
+        if not hum or not hrp or hum.Health <= 0 then
+            bg.Visible = false
+            fg.Visible = false
+            text.Visible = false
+            return
+        end
+        
+        local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+        if not onScreen or pos.Z < 0 then
+            bg.Visible = false
+            fg.Visible = false
+            text.Visible = false
+            return
+        end
+        
+        local percent = hum.Health / hum.MaxHealth
+        local color = GetHealthColor(percent)
+        
+        local width = 65
+        local height = 6
+        local yOffset = -32
+        
+        local x = pos.X - width/2
+        local y = pos.Y + yOffset
+        
+        bg.Size = Vector2.new(width, height)
+        bg.Position = Vector2.new(x, y)
+        bg.Visible = true
+        
+        local fill = width * percent
+        fg.Size = Vector2.new(math.max(3, fill), height)
+        fg.Position = Vector2.new(x, y)
+        fg.Color = color
+        fg.Visible = true
+        
+        text.Text = math.floor(hum.Health) .. "/" .. math.floor(hum.MaxHealth)
+        text.Color = color
+        text.Position = Vector2.new(pos.X, y - 13)
+        text.Visible = true
+    end)
+    
+    SimpleHealthESP_Data[player] = {bg = bg, fg = fg, text = text, conn = conn}
+end
+
+-- ลบ ESP ของผู้เล่น
+local function RemovePlayerESP(player)
+    if SimpleHealthESP_Data[player] then
+        local data = SimpleHealthESP_Data[player]
+        if data.conn then data.conn:Disconnect() end
+        if data.bg then data.bg:Remove() end
+        if data.fg then data.fg:Remove() end
+        if data.text then data.text:Remove() end
+        SimpleHealthESP_Data[player] = nil
+    end
+end
+
+-- เริ่มต้นระบบ ESP
+local function StartHealthESP()
+    -- ล้างเก่า
+    for player, _ in pairs(SimpleHealthESP_Data) do
+        RemovePlayerESP(player)
+    end
+    SimpleHealthESP_Data = {}
+    
+    -- เพิ่มผู้เล่นที่มีอยู่
+    for _, player in ipairs(Players:GetPlayers()) do
+        AddPlayerESP(player)
+    end
+end
+
+-- หยุดระบบ ESP
+local function StopHealthESP()
+    for player, _ in pairs(SimpleHealthESP_Data) do
+        RemovePlayerESP(player)
+    end
+    SimpleHealthESP_Data = {}
+end
+
+-- ===========================================
+-- เพิ่ม Toggle ใน ESP Tab
+-- ===========================================
+
+-- หา Tab ESP
+local ESPTab = nil
+for _, tab in pairs(Window.Tabs) do
+    if tab.Title == "ESP:" then
+        ESPTab = tab
+        break
+    end
+end
+
+if not ESPTab then
+    
+end
+
+-- เพิ่ม Toggle ง่ายๆ
+local HealthToggle = ESPTab:Toggle({
+    Title = "❤️ Health ESP",
+    Desc = "แสดงเลือดสีสดเหนือหัว",
+    Default = false,
+    Callback = function(state)
+        SimpleHealthESP_Enabled = state
+        
+        if state then
+            -- เริ่มระบบ
+            StartHealthESP()
+            
+            -- ติดตามผู้เล่นใหม่
+            Players.PlayerAdded:Connect(function(player)
+                task.wait(1) -- รอให้โหลดตัวละคร
+                AddPlayerESP(player)
+            end)
+            
+            -- ติดตามเมื่อผู้เล่นออก
+            Players.PlayerRemoving:Connect(function(player)
+                RemovePlayerESP(player)
+            end)
+            
+            -- ติดตามเมื่อตัวละครเกิดใหม่
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    player.CharacterAdded:Connect(function()
+                        task.wait(2) -- รอให้ตัวละครพร้อม
+                        RemovePlayerESP(player) -- ลบ ESP เก่า
+                        AddPlayerESP(player)    -- สร้าง ESP ใหม่
+                    end)
+                end
+            end
+            
+            -- สำหรับ LocalPlayer (ตัวเรา) ก็ให้ติดตามผู้เล่นอื่นเมื่อเราตายแล้วเกิด
+            LocalPlayer.CharacterAdded:Connect(function()
+                task.wait(2) -- รอให้เกิดใหม่
+                if SimpleHealthESP_Enabled then
+                    -- รีเฟรช ESP สำหรับผู้เล่นทั้งหมด
+                    for _, player in ipairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer then
+                            RemovePlayerESP(player)
+                            AddPlayerESP(player)
+                        end
+                    end
+                end
+            end)
+            
+            print("✅ Health ESP เปิดใช้งาน")
+        else
+            -- ปิดระบบ
+            StopHealthESP()
+            print("❌ Health ESP ปิดใช้งาน")
+        end
+    end
+})
+
+-- บันทึกใน Config
+if myConfig then
+    myConfig:Register("SimpleHealthESP", HealthToggle)
+end
+
+-- ===========================================
+-- อัตโนมัติเมื่อโหลดเสร็จ
+-- ===========================================
+
+task.wait(3) -- รอให้เกมโหลดเสร็จ
+
+-- ตรวจสอบและเพิ่ม ESP ให้ผู้เล่นที่อาจโหลดช้า
+task.spawn(function()
+    task.wait(5)
+    if SimpleHealthESP_Enabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer and not SimpleHealthESP_Data[player] then
+                AddPlayerESP(player)
+            end
+        end
+    end
+end)
+
+print("🎯 Simple Health ESP พร้อมใช้งาน!")
+print("🎨 สีระบบ: เขียวสด(100-60%) | เหลืองสด(60-30%) | แดงสด(30-0%)")
