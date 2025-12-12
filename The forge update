@@ -7,7 +7,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 
 local Window = WindUI:CreateWindow({
     Title = "ERROR HUB |Free| 🪨",
-    Icon = "rbxassetid://",
+    Icon = "rbxassetid://87372447687978",
     Author = "ERROR_HUB",
     Folder = "GotHubFolder",
     Size = UDim2.fromOffset(400, 200),
