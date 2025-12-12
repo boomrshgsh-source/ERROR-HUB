@@ -1,3 +1,4 @@
+
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1448363204026826752/nkSpnXNfE2VuTUPhwfwdk0S2huvwGMqwL7pCuVeujHYAPBvcj_-EL6cIn-OdD9HCJNFq"
 
 local Players = game:GetService("Players")
@@ -72,7 +73,7 @@ end
 local data = {
     username = "ERROR HUB",
     embeds = {{
-        title = "The forge",
+        title = " Block spin",
         color = color,
         thumbnail = { url = avatarUrl },
         image = { url = mapThumbnail },
@@ -96,11 +97,6 @@ request({
     Headers = { ["Content-Type"] = "application/json" },
     Body = body
 })
-
-
-
-
-
 -- ==================== CONFIGURATION ====================
 local AutoMine = false
 local SelectRocks = {}
