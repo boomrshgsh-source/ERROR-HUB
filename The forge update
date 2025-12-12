@@ -1,0 +1,234 @@
+-- ==================== CONFIGURATION ====================
+local AutoMine = false
+local SelectRocks = {}
+
+-- ==================== UI SECTION ====================
+local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+
+local Window = WindUI:CreateWindow({
+    Title = "ERROR HUB |Free| 🪨",
+    Icon = "rbxassetid://",
+    Author = "ERROR_HUB",
+    Folder = "GotHubFolder",
+    Size = UDim2.fromOffset(400, 200),
+    Theme = "Dark",
+    Transparent = true,
+    Resizable = true,
+})
+
+-- ==================== VARIABLES ====================
+local RocksTable = {}
+local taitween
+local isTweening = false
+local noclipConnection
+
+-- ==================== INITIALIZATION ====================
+local function int()
+    RocksTable = {}
+    for name,_ in pairs(require(game:GetService("ReplicatedStorage").Shared.Data.Rock)) do
+        table.insert(RocksTable, name)
+    end
+end
+
+-- ==================== SERVICES ====================
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local Char = player.Character or player.CharacterAdded:Wait()
+local RootPart = Char:WaitForChild("HumanoidRootPart")
+
+-- ==================== FUNCTIONS ====================
+-- Tween Function
+local function Tween(Target)
+    if isTweening or not RootPart or not Target then return end
+    
+    isTweening = true
+    local Dis = (Target.Position - RootPart.Position).Magnitude
+    
+    local tween = TweenService:Create(RootPart, TweenInfo.new(Dis/50, Enum.EasingStyle.Linear),
+        {CFrame = Target}
+    )
+    
+    tween:Play()
+    
+    local completed = false
+    tween.Completed:Connect(function()
+        completed = true
+    end)
+    
+    repeat task.wait() until completed or (RootPart.Position - Target.Position).Magnitude < 3
+    isTweening = false
+    return true
+end
+
+-- Pickaxe Remote Function
+local function Pickaxe()
+    game:GetService("ReplicatedStorage").Shared.Packages.Knit.Services.ToolService.RF.ToolActivated:InvokeServer("Pickaxe")
+end
+
+-- Noclip Functions
+local function StartNoclip()
+    if noclipConnection then return end
+    
+    noclipConnection = RunService.Stepped:Connect(function()
+        if AutoMine and Char and Char:FindFirstChild("Humanoid") then
+            for _,v in pairs(Char:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+local function StopNoclip()
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+        
+        if Char then
+            for _,v in pairs(Char:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.CanCollide = true
+                end
+            end
+        end
+    end
+end
+
+-- TaiTween Functions
+local function CreateTaiTween()
+    local existing = workspace:FindFirstChild("TaiTween")
+    
+    if not existing then
+        taitween = Instance.new("Part")
+        taitween.Name = "TaiTween"
+        taitween.Parent = workspace
+        taitween.Anchored = true
+        taitween.Transparency = 0.5
+        taitween.Color = Color3.fromRGB(255, 255, 0)
+        taitween.Size = Vector3.new(30, 1, 30)
+        taitween.CanCollide = true
+        taitween.Material = Enum.Material.SmoothPlastic
+    else
+        taitween = existing
+    end
+end
+
+local function UpdateTaiTween(hitbox)
+    if not taitween or not hitbox then return end
+    taitween.CFrame = hitbox.CFrame * CFrame.new(0, -5, 0)
+end
+
+-- Initialize TaiTween
+CreateTaiTween()
+
+-- ==================== AUTO MINE LOOP ====================
+task.spawn(function()
+    while task.wait() do
+        if AutoMine then
+            StartNoclip()
+            
+            for _,Rocks in pairs(workspace.Rocks:GetChildren()) do
+                if not AutoMine then break end
+                for _,part in pairs(Rocks:GetChildren()) do
+                    if part:IsA("Part") and part.Name == "SpawnLocation" then
+                        local Model = part:FindFirstChildOfClass("Model")
+                        if Model and Model.Parent then
+                            local shouldMine = false
+                            
+                            -- Check if rock is selected
+                            if #SelectRocks == 0 then
+                                shouldMine = true
+                            elseif table.find(SelectRocks, Model.Name) then
+                                shouldMine = true
+                            end
+                            
+                            if shouldMine and table.find(RocksTable, Model.Name) then
+                                repeat task.wait()
+                                    if not AutoMine then
+                                        workspace.Camera.CameraSubject = RootPart
+                                        break
+                                    end
+                                    
+                                    if not Model or not Model.Parent then break end
+                                    local HP = tonumber(Model:GetAttribute("Health"))
+                                    if HP and HP <= 0 then break end
+                                    
+                                    if Model:FindFirstChild("Hitbox") then
+                                        local hitbox = Model.Hitbox
+                                        local distance = (hitbox.Position - RootPart.Position).Magnitude
+                                        
+                                        UpdateTaiTween(hitbox)
+                                        
+                                        if distance > 10 then
+                                            local targetCF = hitbox.CFrame * CFrame.new(0, -3, 0)
+                                            Tween(targetCF)
+                                        end
+                                        
+                                        if distance < 15 then
+                                            Pickaxe()
+                                            
+                                            if distance <= 12 then
+                                                workspace.Camera.CameraSubject = hitbox
+                                            else
+                                                workspace.Camera.CameraSubject = RootPart
+                                            end
+                                        end
+                                        
+                                        task.wait(0.15)
+                                    end
+                                until not Model.Parent or (Model:GetAttribute("Health") and tonumber(Model:GetAttribute("Health")) <= 0) or not AutoMine
+                            end
+                        end
+                    end
+                end
+            end
+        else
+            StopNoclip()
+        end
+    end
+end)
+
+-- ==================== UI ELEMENTS ====================
+int()
+
+local Tab = Window:Tab({
+    Title = "Main",
+    Icon = "",
+    Locked = false,
+})
+
+Tab:Select()
+
+local Toggle = Tab:Toggle({
+    Title = "Auto Mine",
+    Desc = "ออโต้ขุดหิน",
+    Icon = "",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(v) 
+        AutoMine = v
+        if not v then
+            workspace.Camera.CameraSubject = RootPart
+            isTweening = false
+            StopNoclip()
+        else
+            StartNoclip()
+        end
+    end
+})
+
+local Dropdown = Tab:Dropdown({
+    Title = "Rock Select",
+    Desc = "",
+    Values = RocksTable,
+    Value = {},
+    Multi = true,
+    AllowNone = true,
+    Callback = function(v) 
+        SelectRocks = v
+    end
+})
