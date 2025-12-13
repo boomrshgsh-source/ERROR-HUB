@@ -117,6 +117,9 @@ local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
 local runService = game:GetService("RunService")
 local camera = workspace.CurrentCamera
+local ContextActionService = game:GetService("ContextActionService")
+
+-- =========================
 
 -- =========================
 -- Local Variables
@@ -687,7 +690,206 @@ local AutoSprintToggle =
     }
 )
 myConfig:Register("AutoSprint", AutoSprintToggle)
+----------------
+--// วิ่งเร็วกับโดดสูง
+---------------
+-- =========================
+-- Services
+-- =========================
 
+-- Local Player & Character
+-- =========================
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+
+-- =========================
+-- Movement Variables
+-- =========================
+local walkSpeedEnabled = false
+local speedValue = 0.05
+local FlyEnabled = false
+local isFlyingUp = false
+local jumpPower = 40
+local moveConnection = nil
+local flyJumpConnection = nil
+
+-- =========================
+-- Walk Speed Function
+-- =========================
+local function setupWalkSpeed()
+    if moveConnection then
+        pcall(function()
+            moveConnection:Disconnect()
+        end)
+    end
+    
+    moveConnection = RunService.RenderStepped:Connect(function()
+        if walkSpeedEnabled and Humanoid and HumanoidRootPart then
+            if Humanoid.MoveDirection.Magnitude > 0 then
+                HumanoidRootPart.CFrame = HumanoidRootPart.CFrame + (Humanoid.MoveDirection.Unit * speedValue)
+            end
+        end
+    end)
+end
+
+-- =========================
+-- Jump Power Function
+-- =========================
+local function setupJumpPower()
+    -- Jump/Fly logic in RenderStepped
+    RunService.RenderStepped:Connect(function()
+        if FlyEnabled and isFlyingUp and HumanoidRootPart then
+            local v = HumanoidRootPart.Velocity
+            HumanoidRootPart.Velocity = Vector3.new(v.X, jumpPower, v.Z)
+        end
+    end)
+    
+    -- PC: Spacebar input
+    UserInputService.InputBegan:Connect(function(input)
+        if FlyEnabled and input.KeyCode == Enum.KeyCode.Space then
+            isFlyingUp = true
+        end
+    end)
+    
+    UserInputService.InputEnded:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.Space then
+            isFlyingUp = false
+        end
+    end)
+    
+    -- Mobile: Jump request
+    UserInputService.JumpRequest:Connect(function()
+        if FlyEnabled then
+            isFlyingUp = true
+            task.delay(0.12, function()
+                isFlyingUp = false
+            end)
+        end
+    end)
+    
+    -- Mobile: Monitor Humanoid.Jumping
+    if Humanoid then
+        flyJumpConnection = Humanoid:GetPropertyChangedSignal("Jumping"):Connect(function()
+            if FlyEnabled and Humanoid.Jumping then
+                isFlyingUp = true
+            else
+                isFlyingUp = false
+            end
+        end)
+    end
+end
+
+-- =========================
+-- Character Setup Function
+-- =========================
+local function setupCharacter(char)
+    Character = char
+    Humanoid = char:WaitForChild("Humanoid")
+    HumanoidRootPart = char:WaitForChild("HumanoidRootPart")
+    
+    -- Re-setup walk speed connection
+    setupWalkSpeed()
+    
+    -- Re-setup jump power for mobile
+    if flyJumpConnection then
+        flyJumpConnection:Disconnect()
+    end
+    
+    if Humanoid then
+        flyJumpConnection = Humanoid:GetPropertyChangedSignal("Jumping"):Connect(function()
+            if FlyEnabled and Humanoid.Jumping then
+                isFlyingUp = true
+            else
+                isFlyingUp = false
+            end
+        end)
+    end
+end
+
+-- =========================
+-- Initial Setup
+-- =========================
+LocalPlayer.CharacterAdded:Connect(setupCharacter)
+if LocalPlayer.Character then
+    setupCharacter(LocalPlayer.Character)
+end
+
+-- Initial setup of jump power
+setupJumpPower()
+
+-- =========================
+-- UI Configuration Example
+-- =========================
+-- Note: This part requires your existing UI library (WindUI or custom)
+local function createMovementUI()    
+    local WalkSpeedToggle = PlayerTab:Toggle(
+    {
+        Title = "Walk Speed",
+        Default = false,
+        Callback = function(state)
+            walkSpeedEnabled = state
+        end
+    }
+    
+    -- Speed Multiplier Slider
+    local SpeedSlider = {
+        Title = "Speed Multiplier",
+        Step = 0.5,
+        Value = {Min = 1, Max = 3, Default = 2},
+        Callback = function(value)
+            speedValue = value * 0.07
+        end
+    }
+    
+    -- Jump Power Toggle
+    local JumpPowerToggle = PlayerTab:Toggle(
+    {
+        Title = "Jump Power",
+        Desc = "กระโดดสูง",
+        Default = false,
+        Callback = function(state)
+            FlyEnabled = state
+        end
+    }
+    
+    -- Jump Power Slider
+    local JumpSlide = PlayerTab:Slider(
+    {
+        Title = "Jump Slide",
+        Desc = "ปรับความสูง",
+        Step = 1,
+        Value = {Min = 20, Max = 200, Default = 40},
+        Callback = function(value)
+            jumpPower = tonumber(value) or 40
+        end
+    }
+    
+    return {
+        WalkSpeedToggle = WalkSpeedToggle,
+        SpeedSlider = SpeedSlider,
+        JumpPowerToggle = JumpPowerToggle,
+        JumpSlide = JumpSlide
+    }
+end
+
+-- =========================
+-- Export Functions if needed
+-- =========================
+return {
+    setupCharacter = setupCharacter,
+    setupWalkSpeed = setupWalkSpeed,
+    setupJumpPower = setupJumpPower,
+    createMovementUI = createMovementUI,
+    
+    -- Variables for external access
+    walkSpeedEnabled = walkSpeedEnabled,
+    speedValue = speedValue,
+    FlyEnabled = FlyEnabled,
+    jumpPower = jumpPower,
+    isFlyingUp = isFlyingUp
+}
 
 ------------------------------------------------------------------
 -- 3D BOX ESP 
@@ -1032,3 +1234,4 @@ ESPTab:Toggle({
         end
     end
 })
+
