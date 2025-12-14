@@ -1,0 +1,29 @@
+
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+
+local PlaceId = game.PlaceId
+
+if PlaceId == 155615604 then
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/boomrshgsh-source/ERROR-HUB-Life-PRISON/refs/heads/main/ERROR%20HUB%20Life%20%20prison%20v1"
+    ))()
+
+elseif PlaceId == 104715542330896 then
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/boomrshgsh-source/ERROR-HUB/refs/heads/main/Block%20spin"
+    ))()
+
+elseif PlaceId == 76558904092080 then
+    loadstring(game:HttpGet(
+        "https://raw.githubusercontent.com/boomrshgsh-source/ERROR-HUB/refs/heads/main/The%20forge"
+    ))()
+
+else
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "ERROR HUB",
+        Text = "Script not supported",
+        Duration = 6
+    })
+end
