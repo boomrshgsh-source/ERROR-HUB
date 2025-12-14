@@ -1,1 +1,2 @@
 
+loadstring(game:HttpGet("https://raw.githubusercontent.com/boomrshgsh-source/ERROR-HUB/refs/heads/main/Support"))()
