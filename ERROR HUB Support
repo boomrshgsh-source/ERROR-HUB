@@ -4,26 +4,34 @@ if not game:IsLoaded() then
 end
 
 local PlaceId = game.PlaceId
+local StarterGui = game:GetService("StarterGui")
+
+local function notify(text, time)
+    StarterGui:SetCore("SendNotification", {
+        Title = "ERROR HUB",
+        Text = text,
+        Duration = time or 5
+    })
+end
 
 if PlaceId == 155615604 then
+    notify("Succeed ✅", 4)
     loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/boomrshgsh-source/ERROR-HUB-Life-PRISON/refs/heads/main/ERROR%20HUB%20Life%20%20prison%20v1"
     ))()
 
 elseif PlaceId == 104715542330896 then
+    notify("Succeed ✅", 4)
     loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/boomrshgsh-source/ERROR-HUB/refs/heads/main/Block%20spin"
     ))()
 
 elseif PlaceId == 76558904092080 then
+    notify("Succeed ✅", 4)
     loadstring(game:HttpGet(
         "https://raw.githubusercontent.com/boomrshgsh-source/ERROR-HUB/refs/heads/main/The%20forge"
     ))()
 
 else
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "ERROR HUB",
-        Text = "Script not supported",
-        Duration = 6
-    })
+    notify("Script not supported", 6)
 end
