@@ -1042,6 +1042,61 @@ if PlayerTab then
 else
     warn("PlayerTab ไม่ถูกสร้าง: UI toggle จะไม่ทำงาน")
 end
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local dropfolder = workspace:WaitForChild("DroppedItems") -- โฟลเดอร์เก็บของที่ตกพื้น
+local RunService = game:GetService("RunService")
+
+-- 🧠 ฟังก์ชันหาความห่างจาก HumanoidRootPart
+local function GetDistanceFromRootPart(target)
+    if not target then
+        return math.huge
+    end
+    local char = player.Character or player.CharacterAdded:Wait()
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then
+        return math.huge
+    end
+    return (root.Position - target.Position).Magnitude
+end
+
+-- ⚙️ ตัวแปรควบคุมเปิดปิด
+_G.AutoPickItems = false
+
+-- 🧲 ฟังก์ชันหลัก
+task.spawn(
+    function()
+        while task.wait(0) do -- ตรวจทุกเฟรม
+            if _G.AutoPickItems then
+                for _, v in pairs(dropfolder:GetChildren()) do
+                    if v and not v:GetAttribute("Locked") then
+                        local zone = v:FindFirstChild("PickUpZone")
+                        if zone then
+                            local dist = GetDistanceFromRootPart(zone)
+                            if dist < math.huge then
+                                Net.get("pickup_dropped_item", v)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+)
+
+-- 🧱 ปุ่ม Toggle UI
+CreditTab:Toggle(
+    {
+        Title = "Auto Pick Item",
+        Flag = "Pickitem",
+        Desc = "Pick up items that are far away",
+        Value = false,
+        Callback = function(value)
+            _G.AutoPickItems = value
+        end
+    }
+)
 local CreditTab = Window:Tab({Title = "Credits", Icon = "heart"}) do
     CreditTab:Section({Title = "ผู้พัฒนา"})
     CreditTab:Button({
