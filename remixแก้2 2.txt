@@ -2226,7 +2226,7 @@ myConfig:Register("FOVRadius", FOVSlider)
 
 Tab:Dropdown({
     Title = "Target Mode",
-    Desc = "Smart Predict ทำงานอัตโนมัติ",
+    Desc = "",
     Values = {"Head", "Humanoid"},
     Default = "Head",
     Callback = function(value)
@@ -2575,8 +2575,6 @@ local SpeedSlider =
         end
     }
 )
-
-
 
 
 
