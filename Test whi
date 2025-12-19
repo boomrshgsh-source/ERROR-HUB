@@ -1,0 +1,43 @@
+-- ================= CONFIG =================
+_G.Key = "TEST-1234"  -- ตัวอย่าง: KEY-ABCD-1234
+
+local API_URL = "https://python.oboom818.repl.co/check"
+
+local SCRIPT_LINK = "https://raw.githubusercontent.com/boomrshgsh-source/UI/refs/heads/main/Error%20HUB"
+
+-- ================= HWID =================
+local Players = game:GetService("Players")
+local RbxAnalyticsService = game:GetService("RbxAnalyticsService")
+
+local HWID = Players.LocalPlayer.UserId .. "-" .. RbxAnalyticsService:GetClientId()
+
+-- ================= CHECK KEY =================
+local function checkKey()
+    local url = API_URL .. "?key=" .. _G.Key .. "&hwid=" .. HWID
+
+    local ok, res = pcall(function()
+        return game:HttpGet(url)
+    end)
+
+    if not ok then
+        Players.LocalPlayer:Kick("❌ ไม่สามารถเชื่อมต่อระบบคีย์ได้")
+        return false
+    end
+
+    if res == "Whitelisted" then
+        return true
+    elseif res == "HWID_MISMATCH" then
+        Players.LocalPlayer:Kick("❌ HWID ไม่ตรง\nไปรีเซ็ต HWID ใน Discord")
+    elseif res == "Expired" then
+        Players.LocalPlayer:Kick("❌ คีย์หมดอายุ")
+    else
+        Players.LocalPlayer:Kick("❌ คีย์ไม่ถูกต้อง")
+    end
+
+    return false
+end
+
+-- ================= LOAD SCRIPT =================
+if checkKey() then
+    loadstring(game:HttpGet(SCRIPT_LINK))()
+end
