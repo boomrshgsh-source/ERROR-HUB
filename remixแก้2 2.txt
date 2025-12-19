@@ -1824,75 +1824,8 @@ task.spawn(
 loadESP()
 -- == UI Tabs ==
 local Tab = Window:Tab({Title = "COMBAT:", Icon = "crosshair"})
-Tab:Section({Title = "GUN:"})
-local SilentToggle =
-    Tab:Toggle(
-    {
-        Title = "Silent Aim",
-        Default = false,
-        Callback = function(state)
-            SilentAimEnabled = state
-            CurrentTarget = nil
-            if state then
-                SilentAimAttachEnabled = false
-                GoodGunEnabled = false
-                if AttachToggle then
-                    AttachToggle:Set(false)
-                end
-                if GoodGunToggle then
-                    GoodGunToggle:Set(false)
-                end
-            end
-        end
-    }
-)
-myConfig:Register("SilentAim", SilentToggle)
 
-local GoodGunToggle =
-    Tab:Toggle(
-    {
-        Title = "GoodGun (WallBang)",
-        Default = false,
-        Callback = function(state)
-            GoodGunEnabled = state
-            CurrentTarget = nil
-            if state then
-                SilentAimEnabled = false
-                SilentAimAttachEnabled = false
-                if SilentToggle then
-                    SilentToggle:Set(false)
-                end
-                if AttachToggle then
-                    AttachToggle:Set(false)
-                end
-            end
-        end
-    }
-)
-myConfig:Register("GoodGun", GoodGunToggle)
 
-local AttachToggle =
-    Tab:Toggle(
-    {
-        Title = "Silent Aim (Attach Anti Lock)",
-        Default = false,
-        Callback = function(state)
-            SilentAimAttachEnabled = state
-            CurrentTarget = nil
-            if state then
-                SilentAimEnabled = false
-                GoodGunEnabled = false
-                if SilentToggle then
-                    SilentToggle:Set(false)
-                end
-                if GoodGunToggle then
-                    GoodGunToggle:Set(false)
-                end
-            end
-        end
-    }
-)
-myConfig:Register("SilentAimAttach", AttachToggle)
 local FOVSlider =
     Tab:Slider(
     {
@@ -2257,38 +2190,10 @@ local SpeedSlider =
         end
     }
 )
-myConfig:Register("SpeedMultiplier", SpeedSlider)
-local FlyToggle =
-    Tab_Character:Toggle(
-    {
-        Title = "Fly",
-        Default = false,
-        Callback = function(state)
-            FlyEnabled = state
-            if not FlyEnabled then
-                isFlyingUp = false
-            end
-        end
-    }
-)
-myConfig:Register("Fly", FlyToggle)
 
-local FlyPowerSlider =
-    Tab_Character:Slider(
-    {
-        Title = "Fly Power",
-        Step = 1,
-        Value = {
-            Min = 20,
-            Max = 200,
-            Default = floatPower
-        },
-        Callback = function(value)
-            floatPower = tonumber(value) or 40
-        end
-    }
-)
-myConfig:Register("FlyPower", FlyPowerSlider)
+
+
+
 
 -- Leg Sink (ขาจะจมดิน)
 Tab_Character:Divider()
